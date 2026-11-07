@@ -106,6 +106,18 @@ const clientStrings = JSON.stringify({
     <meta name="twitter:description" content={description} />
     <meta name="twitter:image" content={ogImage} />
 
+    {
+      /* Refreshing any page goes back to the home page of its language.
+         Not in `npm run dev`, where saving cheatsheet.md reloads the page. */
+      !import.meta.env.DEV && (
+        <script is:inline define:vars={{ home: `${base}/` }}>
+          try {
+            var nav = performance.getEntriesByType('navigation')[0];
+            if (nav && nav.type === 'reload' && location.pathname !== home) location.replace(home);
+          } catch (e) {}
+        </script>
+      )
+    }
     <script is:inline>
       // Apply the saved theme (or the system one) and console state before the first paint.
       (function () {
