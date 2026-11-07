@@ -41,6 +41,14 @@ export interface SubHeading {
   text: string;
 }
 
+/** One line of the console panel: a sub-heading, a command or another table row. */
+export interface ConsoleLine {
+  k: 'comment' | 'cmd' | 'item';
+  t: string;
+  /** id of the element it points to */
+  id: string;
+}
+
 export interface Section {
   index: number;
   /** "3" for "3. Files: ..." (empty if the heading has no number). */
@@ -60,6 +68,8 @@ export interface Section {
   summaryIsCommands: boolean;
   entryCount: number;
   subheadings: SubHeading[];
+  /** Lines for the console panel on the section page. */
+  console: ConsoleLine[];
   /** HTML for the section's own page (### becomes h2). */
   html: string;
   /** HTML for the one-page sheet (### stays h3, ids prefixed with the slug). */
@@ -91,6 +101,8 @@ export interface Cheatsheet {
   introHtml: string;
   description: string;
   sections: Section[];
+  /** Number of lines in the Markdown file. */
+  sourceLines: number;
   topics: { id: string; label: string; count: number }[];
   searchIndex: {
     sections: { n: string; t: string; u: string }[];
@@ -272,6 +284,7 @@ interface RenderOptions {
   highlighter: Highlighter;
   entries: SearchEntry[];
   subheadings: SubHeading[];
+  consoleLines: ConsoleLine[];
 }
 
 function rehypeCheatsheet(opts: RenderOptions) {
@@ -305,6 +318,7 @@ function rehypeCheatsheet(opts: RenderOptions) {
         const level = Number(node.tagName[1]);
         if (opts.mode === 'page') node.tagName = `h${level - 1}`;
         if (level === 3) opts.subheadings.push({ id, text });
+        opts.consoleLines.push({ k: 'comment', t: text, id });
         context = text;
         collect({ k: 'heading', c: text, d: opts.sectionTitle, u: url(id) });
         out.push(node);
@@ -321,6 +335,7 @@ function rehypeCheatsheet(opts: RenderOptions) {
         if (meaningful.length === 1 && isEl(meaningful[0], 'strong')) {
           // A bold-only paragraph acts as a caption for the table below it.
           node.properties.className = ['caption'];
+          opts.consoleLines.push({ k: 'comment', t: text, id });
           context = text;
           collect({ k: 'heading', c: text, d: opts.sectionTitle, u: url(id) });
         } else {
@@ -400,6 +415,7 @@ function rehypeCheatsheet(opts: RenderOptions) {
         } else {
           desc = texts[1] ?? '';
         }
+        opts.consoleLines.push({ k: isCommandTable ? 'cmd' : 'item', t: texts[0] ?? '', id });
         collect({ k: 'row', c: texts[0] ?? '', n: name || undefined, d: desc, x: context || undefined, u: url(id) });
       }
 
@@ -441,6 +457,7 @@ function rehypeCheatsheet(opts: RenderOptions) {
           .map((l) => l.replace(/^\s*(#|\/\/|\/\*)\s?/, '').replace(/\*\/\s*$/, ''));
         const codeLines = lines.filter((l) => !/^\s*(#(?!!)|\/\/|\/\*)/.test(l));
         if (codeLines.length === 0) continue;
+        opts.consoleLines.push({ k: 'cmd', t: clean(codeLines[0] ?? ''), id });
         collect({
           k: 'code',
           c: clean(codeLines[0] ?? '') + (codeLines.length > 1 ? ' …' : ''),
@@ -593,8 +610,15 @@ async function buildCheatsheet(lang: Lang): Promise<Cheatsheet> {
       highlighter,
     };
 
-    const html = await renderNodes(r.nodes, { ...common, mode: 'page', entries, subheadings });
-    const htmlAll = await renderNodes(r.nodes, { ...common, mode: 'all', entries: [], subheadings: [] });
+    const consoleLines: ConsoleLine[] = [];
+    const html = await renderNodes(r.nodes, { ...common, mode: 'page', entries, subheadings, consoleLines });
+    const htmlAll = await renderNodes(r.nodes, {
+      ...common,
+      mode: 'all',
+      entries: [],
+      subheadings: [],
+      consoleLines: [],
+    });
 
     const entryCount = entries.slice(before).filter((e) => e.k === 'row' || e.k === 'code').length;
     entries.splice(before, 0, { k: 'section', c: r.headingText, d: summary, s: sectionLabel, u: url });
@@ -614,6 +638,7 @@ async function buildCheatsheet(lang: Lang): Promise<Cheatsheet> {
       subheadings,
       html,
       htmlAll,
+      console: consoleLines,
     });
   }
 
@@ -633,6 +658,7 @@ async function buildCheatsheet(lang: Lang): Promise<Cheatsheet> {
     base,
     title: title || t.titleSuffix,
     introHtml: await renderPlain(intro),
+    sourceLines: source.replace(/\n$/, '').split('\n').length,
     description,
     sections,
     topics: topicList,
