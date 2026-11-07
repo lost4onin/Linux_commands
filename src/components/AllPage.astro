@@ -1,0 +1,51 @@
+---
+import Base from '../layouts/Base.astro';
+import { getCheatsheet, hasLang } from '../lib/cheatsheet';
+import { ui, langBase, otherLang, type Lang } from '../i18n';
+
+interface Props {
+  lang: Lang;
+}
+
+const { lang } = Astro.props;
+const t = ui[lang];
+const base = langBase(lang);
+const other = otherLang(lang);
+const sheet = await getCheatsheet(lang);
+const alternate = hasLang(other) ? `${langBase(other)}/all/` : undefined;
+---
+
+<Base
+  lang={lang}
+  title={`${t.fullSheetTitle} · ${t.titleSuffix}`}
+  description={t.fullSheetDescription(sheet.title)}
+  current="all"
+  alternate={alternate}
+>
+  <article class="all-page">
+    <header class="page-head">
+      <h1>{sheet.title}</h1>
+      <div class="intro" set:html={sheet.introHtml} />
+      <div class="all-actions">
+        <button class="btn btn-primary" type="button" data-print>{t.print}</button>
+        <p class="filter-note" data-only-note hidden>
+          <span data-only-count></span>
+          <a href={`${base}/all/`}>{t.showAll}</a>
+        </p>
+      </div>
+    </header>
+
+    {
+      sheet.sections.map((s) => (
+        <section class="sheet-section" id={s.slug} data-slug={s.slug} aria-labelledby={`${s.slug}-title`}>
+          <h2 id={`${s.slug}-title`}>
+            <a href={s.url}>
+              {s.number && <span class="h-num">{s.number}.</span>} {s.title}
+            </a>
+          </h2>
+          <div class="prose" set:html={s.htmlAll} />
+        </section>
+      ))
+    }
+  </article>
+</Base>

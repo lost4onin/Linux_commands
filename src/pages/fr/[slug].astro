@@ -1,0 +1,16 @@
+---
+import SectionPage from '../../components/SectionPage.astro';
+import { getCheatsheet, hasLang } from '../../lib/cheatsheet';
+
+export async function getStaticPaths() {
+  if (!hasLang('fr')) return [];
+  const { sections } = await getCheatsheet('fr');
+  return sections.map((s) => ({ params: { slug: s.slug } }));
+}
+
+const sheet = await getCheatsheet('fr');
+const index = sheet.sections.findIndex((s) => s.slug === Astro.params.slug);
+if (index === -1) return new Response('Section introuvable', { status: 404 });
+---
+
+<SectionPage lang="fr" sheet={sheet} index={index} />

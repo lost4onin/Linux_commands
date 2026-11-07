@@ -3,6 +3,9 @@
  * searches it with Fuse.js entirely in the browser.
  */
 import Fuse, { type IFuseOptions } from 'fuse.js';
+import { readStrings, format } from './strings';
+
+const ui = readStrings();
 
 interface Entry {
   k: 'row' | 'code' | 'note' | 'heading' | 'section';
@@ -41,7 +44,7 @@ const options: IFuseOptions<Entry> = {
 
 let index: Index | undefined;
 let fuse: Fuse<Entry> | undefined;
-const ready: Promise<void> = fetch('/search-index.json')
+const ready: Promise<void> = fetch(ui.indexUrl || '/search-index.json')
   .then((r) => {
     if (!r.ok) throw new Error(`HTTP ${r.status}`);
     return r.json() as Promise<Index>;
@@ -51,7 +54,7 @@ const ready: Promise<void> = fetch('/search-index.json')
     fuse = new Fuse(data.entries, options);
   })
   .catch(() => {
-    status.textContent = 'The search index could not be loaded. Check your connection and try again.';
+    status.textContent = ui.indexError;
   });
 
 let active = 0;
@@ -85,13 +88,13 @@ function renderEmpty() {
         </a>`,
       )
       .join('');
-  status.textContent = index ? '' : 'Loading search index…';
+  status.textContent = index ? '' : ui.loading;
   setActive(0);
 }
 
 function renderResults(query: string) {
   if (!fuse) {
-    status.textContent = 'Loading search index…';
+    status.textContent = ui.loading;
     return;
   }
   const found = fuse.search(query, { limit: MAX_RESULTS }).map((r) => r.item);
@@ -100,7 +103,7 @@ function renderResults(query: string) {
 
   if (found.length === 0) {
     list.innerHTML = '';
-    status.textContent = `No results for “${query}”.`;
+    status.textContent = format(ui.noResults, { q: query });
     return;
   }
 
@@ -118,7 +121,8 @@ function renderResults(query: string) {
         </a>`;
     })
     .join('');
-  status.textContent = `${found.length}${found.length === MAX_RESULTS ? '+' : ''} result${found.length === 1 ? '' : 's'}`;
+  const count = `${found.length}${found.length === MAX_RESULTS ? '+' : ''}`;
+  status.textContent = format(found.length === 1 ? ui.resultOne : ui.resultMany, { n: count });
   setActive(0);
 }
 

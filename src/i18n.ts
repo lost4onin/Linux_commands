@@ -1,0 +1,153 @@
+/**
+ * Interface text in each language. The cheat sheet content itself comes from
+ * cheatsheet.md (English) and cheatsheet.fr.md (French).
+ */
+export const LANGS = ['en', 'fr'] as const;
+export type Lang = (typeof LANGS)[number];
+
+/** URL prefix of a language: '' for English, '/fr' for French. */
+export const langBase = (lang: Lang) => (lang === 'en' ? '' : `/${lang}`);
+export const otherLang = (lang: Lang): Lang => (lang === 'en' ? 'fr' : 'en');
+
+const en = {
+  ogLocale: 'en_US',
+  brand: 'Unix/Linux cheat sheet',
+  titleSuffix: 'Linux / Unix Cheat Sheet',
+  skip: 'Skip to content',
+  menu: 'Sections menu',
+  sections: 'Sections',
+  searchTrigger: 'Search commands…',
+  searchLabel: 'Search commands',
+  searchPlaceholder: 'Search: chmod, fork, grep -v, zombie…',
+  closeSearch: 'Close search',
+  jumpToSection: 'Jump to a section',
+  resultsLabel: 'Results',
+  helpMove: 'move',
+  helpOpen: 'open',
+  helpClose: 'close',
+  darkMode: 'Dark mode',
+  /** The language switch shows the *other* language. */
+  switchLabel: 'Français',
+  switchShort: 'FR',
+  fullSheet: 'Full sheet on one page',
+  footerGenerated: 'Generated from',
+  footerPress: 'Press',
+  footerOr: 'or',
+  footerToSearch: 'to search',
+  footerFullSheet: 'Full sheet',
+  sourceFile: 'cheatsheet.md',
+  searchAll: 'Search all commands',
+  print: 'Print / Save as PDF',
+  filterByTopic: 'Filter sections by topic',
+  allTopics: 'All',
+  reviseThese: 'Revise these on one page',
+  entries: (n: number) => `${n} entries`,
+  breadcrumb: 'Breadcrumb',
+  seeInFullSheet: 'see it in the full sheet',
+  onThisPage: 'On this page',
+  prevNext: 'Previous and next sections',
+  previous: '← Previous',
+  next: 'Next →',
+  home: '← Home',
+  allSections: 'All sections',
+  done: 'Done →',
+  fullSheetTitle: 'Full sheet',
+  fullSheetDescription: (title: string) =>
+    `Every section of the ${title} on one page, ready to print or save as PDF.`,
+  showAll: 'Show all sections',
+  /** Used while rendering the Markdown. */
+  render: {
+    copy: 'Copy',
+    copyCodeSr: ' code',
+    copyCommand: 'Copy command',
+    table: 'Table',
+    code: (lang: string) => `${lang} code`,
+  },
+  /** Sent to the browser scripts. */
+  client: {
+    copy: 'Copy',
+    copied: 'Copied',
+    failed: 'Failed',
+    announceCopied: 'Copied to clipboard',
+    announceFailed: 'Copy failed',
+    showing: 'Showing {n} of {total} sections.',
+    revision: 'Revision view: {n} of {total} sections.',
+    loading: 'Loading search index…',
+    noResults: 'No results for “{q}”.',
+    resultOne: '{n} result',
+    resultMany: '{n} results',
+    indexError: 'The search index could not be loaded. Check your connection and try again.',
+  },
+};
+
+export type UiStrings = typeof en;
+
+const fr: UiStrings = {
+  ogLocale: 'fr_FR',
+  brand: 'Aide-mémoire Unix/Linux',
+  titleSuffix: 'Aide-mémoire Linux / Unix',
+  skip: 'Aller au contenu',
+  menu: 'Menu des sections',
+  sections: 'Sections',
+  searchTrigger: 'Rechercher une commande…',
+  searchLabel: 'Rechercher une commande',
+  searchPlaceholder: 'Rechercher : chmod, fork, grep -v, zombie…',
+  closeSearch: 'Fermer la recherche',
+  jumpToSection: 'Aller à une section',
+  resultsLabel: 'Résultats',
+  helpMove: 'se déplacer',
+  helpOpen: 'ouvrir',
+  helpClose: 'fermer',
+  darkMode: 'Mode sombre',
+  switchLabel: 'English',
+  switchShort: 'EN',
+  fullSheet: 'Tout sur une seule page',
+  footerGenerated: 'Généré à partir de',
+  footerPress: 'Appuyez sur',
+  footerOr: 'ou',
+  footerToSearch: 'pour rechercher',
+  footerFullSheet: 'Page complète',
+  sourceFile: 'cheatsheet.fr.md',
+  searchAll: 'Rechercher dans toutes les commandes',
+  print: 'Imprimer / Enregistrer en PDF',
+  filterByTopic: 'Filtrer les sections par thème',
+  allTopics: 'Toutes',
+  reviseThese: 'Réviser ces sections sur une page',
+  entries: (n: number) => `${n} entrées`,
+  breadcrumb: "Fil d'Ariane",
+  seeInFullSheet: 'voir dans la page complète',
+  onThisPage: 'Sur cette page',
+  prevNext: 'Sections précédente et suivante',
+  previous: '← Précédente',
+  next: 'Suivante →',
+  home: '← Accueil',
+  allSections: 'Toutes les sections',
+  done: 'Terminé →',
+  fullSheetTitle: 'Page complète',
+  fullSheetDescription: (title: string) =>
+    `Toutes les sections de l'${title.charAt(0).toLowerCase()}${title.slice(1)} sur une seule page, prêtes à imprimer ou à enregistrer en PDF.`,
+  showAll: 'Afficher toutes les sections',
+  render: {
+    copy: 'Copier',
+    copyCodeSr: ' le code',
+    copyCommand: 'Copier la commande',
+    table: 'Tableau',
+    code: (lang: string) => `code ${lang}`,
+  },
+  client: {
+    copy: 'Copier',
+    copied: 'Copié',
+    failed: 'Échec',
+    announceCopied: 'Copié dans le presse-papiers',
+    announceFailed: 'La copie a échoué',
+    showing: '{n} sections affichées sur {total}.',
+    revision: 'Mode révision : {n} sections sur {total}.',
+    loading: "Chargement de l'index de recherche…",
+    noResults: 'Aucun résultat pour « {q} ».',
+    resultOne: '{n} résultat',
+    resultMany: '{n} résultats',
+    indexError: "Impossible de charger l'index de recherche. Vérifiez votre connexion et réessayez.",
+  },
+};
+
+export const ui: Record<Lang, UiStrings> = { en, fr };

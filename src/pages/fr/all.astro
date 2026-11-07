@@ -1,0 +1,8 @@
+---
+import AllPage from '../../components/AllPage.astro';
+import { hasLang } from '../../lib/cheatsheet';
+
+if (!hasLang('fr')) return Astro.redirect('/all/');
+---
+
+<AllPage lang="fr" />

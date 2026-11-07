@@ -1,8 +1,9 @@
 /**
- * Build-time parser for /cheatsheet.md.
+ * Build-time parser for /cheatsheet.md (English) and /cheatsheet.fr.md (French).
  *
  * - The `#` heading is the site title; everything before the first `##` is the intro.
  * - Every `##` heading starts a section, which becomes one page.
+ * - French sections are paired with English ones by position and reuse their slugs.
  * - Tables, lists, paragraphs and code blocks are indexed for the client-side search.
  *
  * Nothing here runs in the browser.
@@ -22,9 +23,18 @@ import { createHighlighter, type Highlighter } from 'shiki';
 import type { Root as MdRoot, RootContent as MdContent, Table as MdTable } from 'mdast';
 import type { Root as HRoot, RootContent as HContent, Element, ElementContent, Properties } from 'hast';
 import { terminalTheme } from './terminal-theme';
-import { topics, RESERVED_SLUGS } from '../site.config';
+import { topics, otherTopicLabel, RESERVED_SLUGS } from '../site.config';
+import { ui, langBase, type Lang } from '../i18n';
 
-export const SOURCE_PATH = path.resolve(process.cwd(), 'cheatsheet.md');
+export const SOURCE_PATHS: Record<Lang, string> = {
+  en: path.resolve(process.cwd(), 'cheatsheet.md'),
+  fr: path.resolve(process.cwd(), 'cheatsheet.fr.md'),
+};
+
+/** True when the Markdown file for this language exists. */
+export function hasLang(lang: Lang): boolean {
+  return fs.existsSync(SOURCE_PATHS[lang]);
+}
 
 export interface SubHeading {
   id: string;
@@ -74,6 +84,9 @@ export interface SearchEntry {
 }
 
 export interface Cheatsheet {
+  lang: Lang;
+  /** URL prefix: '' or '/fr'. */
+  base: string;
   title: string;
   introHtml: string;
   description: string;
@@ -88,14 +101,24 @@ export interface Cheatsheet {
 /* ------------------------------------------------------------------ */
 /* Caching: re-parse only when the file changes (keeps `npm run dev` live) */
 
-let cache: { mtime: number; data: Promise<Cheatsheet> } | undefined;
+const cache = new Map<Lang, { key: string; data: Promise<Cheatsheet> }>();
 
-export function getCheatsheet(): Promise<Cheatsheet> {
-  const mtime = fs.statSync(SOURCE_PATH).mtimeMs;
-  if (!cache || cache.mtime !== mtime) {
-    cache = { mtime, data: buildCheatsheet() };
+function mtime(file: string): number {
+  try {
+    return fs.statSync(file).mtimeMs;
+  } catch {
+    return 0;
   }
-  return cache.data;
+}
+
+export function getCheatsheet(lang: Lang = 'en'): Promise<Cheatsheet> {
+  // French slugs depend on the English file, so both mtimes are part of the key.
+  const key = `${mtime(SOURCE_PATHS.en)}:${mtime(SOURCE_PATHS[lang])}`;
+  const hit = cache.get(lang);
+  if (hit && hit.key === key) return hit.data;
+  const data = buildCheatsheet(lang);
+  cache.set(lang, { key, data });
+  return data;
 }
 
 let highlighter: Promise<Highlighter> | undefined;
@@ -114,6 +137,13 @@ function getHighlighter() {
 const PLACEHOLDERS = new Set(['cmd', 'cmd1', 'cmd2', 'file', 'dir', 'name', 'var', 'src', 'dest']);
 const COMMAND_TOKEN = /^[a-z][\w.+-]*$/;
 
+/* First-column table headers, in English and French. */
+const H_COMMAND = /^(command|commande)\b/;
+const H_CALL = /^(call|appel)\b/;
+const H_TOOL_OR_SYNTAX = /^(tool|outil|syntax|syntaxe)\b/;
+const H_COMMAND_TABLE = /^(command|commande|syntax|syntaxe|call|appel)\b/;
+const H_NAME = /name|nom/i;
+
 function headerOf(table: MdTable): string {
   const first = table.children[0]?.children[0];
   return first ? mdToString(first).trim().toLowerCase() : '';
@@ -130,10 +160,10 @@ function inlineCodes(node: MdContent): string[] {
 /** Command or function names from the first column of a table. */
 function firstColumnNames(table: MdTable, purpose: 'summary' | 'known'): string[] {
   const header = headerOf(table);
-  const isCommand = /^command\b/.test(header);
-  const isCall = /^call\b/.test(header);
+  const isCommand = H_COMMAND.test(header);
+  const isCall = H_CALL.test(header);
   const accepted =
-    purpose === 'summary' ? isCommand || isCall : isCommand || /^(tool|syntax)\b/.test(header);
+    purpose === 'summary' ? isCommand || isCall : isCommand || H_TOOL_OR_SYNTAX.test(header);
   if (!accepted) return [];
 
   const names: string[] = [];
@@ -181,13 +211,15 @@ function childElements(node: Element, tag?: string): Element[] {
   return node.children.filter((c): c is Element => isEl(c, tag));
 }
 
-function copyButton(): Element {
+type Labels = (typeof ui)['en']['render'];
+
+function copyButton(labels: Labels): Element {
   return el('button', {
     type: 'button',
     className: ['copy-inline'],
     dataCopy: 'inline',
-    ariaLabel: 'Copy command',
-    title: 'Copy',
+    ariaLabel: labels.copyCommand,
+    title: labels.copy,
   });
 }
 
@@ -207,7 +239,12 @@ function shouldCopy(text: string, mode: 'command-cell' | 'prose', known: Set<str
   return /\s/.test(t) && known.has(first);
 }
 
-function addCopyButtons(node: Element, mode: 'command-cell' | 'prose', known: Set<string>) {
+function addCopyButtons(
+  node: Element,
+  mode: 'command-cell' | 'prose',
+  known: Set<string>,
+  labels: Labels,
+) {
   const targets: { parent: Element; index: number }[] = [];
   visit(node, 'element', (child, index, parent) => {
     if (child.tagName !== 'code' || index === undefined || !parent) return;
@@ -216,7 +253,7 @@ function addCopyButtons(node: Element, mode: 'command-cell' | 'prose', known: Se
     }
   });
   for (const { parent, index } of targets.reverse()) {
-    parent.children.splice(index + 1, 0, copyButton());
+    parent.children.splice(index + 1, 0, copyButton(labels));
   }
 }
 
@@ -225,6 +262,9 @@ function addCopyButtons(node: Element, mode: 'command-cell' | 'prose', known: Se
 
 interface RenderOptions {
   slug: string;
+  /** URL prefix of the language ('' or '/fr'). */
+  base: string;
+  labels: Labels;
   sectionTitle: string;
   sectionLabel: string;
   mode: 'page' | 'all';
@@ -242,7 +282,7 @@ function rehypeCheatsheet(opts: RenderOptions) {
       const words = clean(text).split(' ').slice(0, 8).join(' ');
       return prefix + (slugger.slug(words) || slugger.slug('item'));
     };
-    const url = (id: string) => `/${opts.slug}/#${id}`;
+    const url = (id: string) => `${opts.base}/${opts.slug}/#${id}`;
     const collect = (entry: Omit<SearchEntry, 's'>) => {
       if (opts.mode === 'page') opts.entries.push({ ...entry, s: opts.sectionLabel });
     };
@@ -284,7 +324,7 @@ function rehypeCheatsheet(opts: RenderOptions) {
           context = text;
           collect({ k: 'heading', c: text, d: opts.sectionTitle, u: url(id) });
         } else {
-          addCopyButtons(node, 'prose', opts.known);
+          addCopyButtons(node, 'prose', opts.known, opts.labels);
           collect({ k: 'note', c: '', d: text, x: context || undefined, u: url(id) });
         }
         out.push(node);
@@ -296,7 +336,7 @@ function rehypeCheatsheet(opts: RenderOptions) {
           const text = clean(hastToString(li));
           const id = makeId(text);
           li.properties.id = id;
-          addCopyButtons(li, 'prose', opts.known);
+          addCopyButtons(li, 'prose', opts.known, opts.labels);
           collect({ k: 'note', c: '', d: text, x: context || undefined, u: url(id) });
         }
         out.push(node);
@@ -326,7 +366,7 @@ function rehypeCheatsheet(opts: RenderOptions) {
       const headerCells = headerRow ? childElements(headerRow) : [];
       const headers = headerCells.map((c) => clean(hastToString(c)));
       const h0 = (headers[0] ?? '').toLowerCase();
-      const isCommandTable = /^(command|syntax|call)\b/.test(h0);
+      const isCommandTable = H_COMMAND_TABLE.test(h0);
       const cols = headers.length || (tbody ? childElements(childElements(tbody, 'tr')[0] ?? el('tr')).length : 0);
 
       for (const th of headerCells) th.properties.scope = 'col';
@@ -344,12 +384,12 @@ function rehypeCheatsheet(opts: RenderOptions) {
         tr.properties.id = id;
 
         cells.forEach((cell, i) =>
-          addCopyButtons(cell, i === 0 && isCommandTable ? 'command-cell' : 'prose', opts.known),
+          addCopyButtons(cell, i === 0 && isCommandTable ? 'command-cell' : 'prose', opts.known, opts.labels),
         );
 
         let name: string | undefined;
         let desc: string;
-        if (cols >= 3 && /name/i.test(headers[1] ?? '')) {
+        if (cols >= 3 && H_NAME.test(headers[1] ?? '')) {
           name = texts[1];
           desc = texts.slice(2).join(' · ');
         } else if (cols > 2) {
@@ -367,7 +407,7 @@ function rehypeCheatsheet(opts: RenderOptions) {
       table.properties.dataCols = String(cols);
       return el(
         'div',
-        { className: ['table-wrap'], tabIndex: 0, role: 'group', ariaLabel: `Table: ${caption}` },
+        { className: ['table-wrap'], tabIndex: 0, role: 'group', ariaLabel: `${opts.labels.table}: ${caption}` },
         [table],
       );
     }
@@ -387,7 +427,7 @@ function rehypeCheatsheet(opts: RenderOptions) {
       shikiPre.properties = {
         className: ['shiki'],
         tabIndex: 0,
-        ariaLabel: `${lang} code: ${caption}`,
+        ariaLabel: `${opts.labels.code(lang)}: ${caption}`,
       };
 
       codeCount += 1;
@@ -414,8 +454,8 @@ function rehypeCheatsheet(opts: RenderOptions) {
         el('div', { className: ['code-head'] }, [
           el('span', { className: ['code-lang'] }, [txt(lang)]),
           el('button', { type: 'button', className: ['copy-block'], dataCopy: 'block' }, [
-            el('span', { className: ['copy-label'] }, [txt('Copy')]),
-            el('span', { className: ['sr-only'] }, [txt(' code')]),
+            el('span', { className: ['copy-label'] }, [txt(opts.labels.copy)]),
+            el('span', { className: ['sr-only'] }, [txt(opts.labels.copyCodeSr)]),
           ]),
         ]),
         shikiPre,
@@ -441,10 +481,22 @@ async function renderPlain(nodes: MdContent[]): Promise<string> {
 /* ------------------------------------------------------------------ */
 /* Main build                                                          */
 
-async function buildCheatsheet(): Promise<Cheatsheet> {
+async function buildCheatsheet(lang: Lang): Promise<Cheatsheet> {
+  const file = SOURCE_PATHS[lang];
+  const fileName = path.basename(file);
+  const t = ui[lang];
+  const base = langBase(lang);
+
   // Normalise Windows line endings so copied code has no stray \r.
-  const source = fs.readFileSync(SOURCE_PATH, 'utf8').replace(/^﻿/, '').replace(/\r\n?/g, '\n');
+  const source = fs.readFileSync(file, 'utf8').replace(/^\uFEFF/, '').replace(/\r\n?/g, '\n');
   const mdTree = unified().use(remarkParse).use(remarkGfm).parse(source) as MdRoot;
+
+  if (lang === 'fr') {
+    // French typography: no line break before : ; ! ? » or after «. Code is untouched.
+    visit(mdTree, 'text', (node) => {
+      node.value = node.value.replace(/ ([:;!?»])/g, ' $1').replace(/« /g, '« ');
+    });
+  }
 
   let title = '';
   const intro: MdContent[] = [];
@@ -464,7 +516,16 @@ async function buildCheatsheet(): Promise<Cheatsheet> {
   }
 
   if (raw.length === 0) {
-    throw new Error(`cheatsheet.md has no "## " headings, so there are no sections to build.`);
+    throw new Error(`${fileName} has no "## " headings, so there are no sections to build.`);
+  }
+
+  // Translations reuse the English slugs, paired by position, so /files/ <-> /fr/files/.
+  const englishSlugs = lang === 'en' ? [] : (await getCheatsheet('en')).sections.map((s) => s.slug);
+  if (lang !== 'en' && englishSlugs.length !== raw.length) {
+    console.warn(
+      `[cheatsheet] ${fileName} has ${raw.length} sections but cheatsheet.md has ${englishSlugs.length}. ` +
+        'Sections are paired by position, so keep the same order in both files.',
+    );
   }
 
   // Commands known anywhere in the sheet, used to decide which inline code gets a copy button.
@@ -476,7 +537,7 @@ async function buildCheatsheet(): Promise<Cheatsheet> {
   }
 
   const highlighter = await getHighlighter();
-  const usedSlugs = new Set(RESERVED_SLUGS);
+  const usedSlugs = new Set([...RESERVED_SLUGS, ...englishSlugs]);
   const entries: SearchEntry[] = [];
   const sections: Section[] = [];
 
@@ -484,12 +545,16 @@ async function buildCheatsheet(): Promise<Cheatsheet> {
     const m = r.headingText.match(/^(\d+)[.)]\s+(.*)$/);
     const number = m?.[1] ?? '';
     const title_ = m?.[2] ?? r.headingText;
-    const shortTitle = clean(title_.split(/[:,(]|\s+and\s+/i)[0] ?? '') || title_;
+    const shortTitle = clean(title_.split(/[:,(]|\s+(?:and|et)\s+/i)[0] ?? '') || title_;
 
-    const base = slugOnce(shortTitle) || `section-${index}`;
-    let slug = base;
-    for (let n = 2; usedSlugs.has(slug); n++) slug = `${base}-${n}`;
-    usedSlugs.add(slug);
+    let slug = englishSlugs[index] ?? '';
+    if (!slug) {
+      const baseSlug = slugOnce(shortTitle) || `section-${index}`;
+      slug = baseSlug;
+      for (let n = 2; usedSlugs.has(slug); n++) slug = `${baseSlug}-${n}`;
+      usedSlugs.add(slug);
+    }
+    const url = `${base}/${slug}/`;
 
     // One-line summary: <!-- description: ... --> override, else command names,
     // else the first paragraph, else the sub-headings.
@@ -518,19 +583,21 @@ async function buildCheatsheet(): Promise<Cheatsheet> {
     const sectionLabel = number ? `${number}. ${shortTitle}` : shortTitle;
     const subheadings: SubHeading[] = [];
     const before = entries.length;
-    const common = { slug, sectionTitle: r.headingText, sectionLabel, known, highlighter };
+    const common = {
+      slug,
+      base,
+      labels: t.render,
+      sectionTitle: r.headingText,
+      sectionLabel,
+      known,
+      highlighter,
+    };
 
     const html = await renderNodes(r.nodes, { ...common, mode: 'page', entries, subheadings });
     const htmlAll = await renderNodes(r.nodes, { ...common, mode: 'all', entries: [], subheadings: [] });
 
     const entryCount = entries.slice(before).filter((e) => e.k === 'row' || e.k === 'code').length;
-    entries.splice(before, 0, {
-      k: 'section',
-      c: r.headingText,
-      d: summary,
-      s: sectionLabel,
-      u: `/${slug}/`,
-    });
+    entries.splice(before, 0, { k: 'section', c: r.headingText, d: summary, s: sectionLabel, u: url });
 
     sections.push({
       index,
@@ -539,8 +606,8 @@ async function buildCheatsheet(): Promise<Cheatsheet> {
       heading: r.headingText,
       shortTitle,
       slug,
-      url: `/${slug}/`,
-      topic: topics.find((t) => t.slugs.includes(slug))?.id ?? 'other',
+      url,
+      topic: topics.find((tp) => tp.slugs.includes(slug))?.id ?? 'other',
       summary,
       summaryIsCommands,
       entryCount,
@@ -551,15 +618,20 @@ async function buildCheatsheet(): Promise<Cheatsheet> {
   }
 
   const introParagraphs = intro.filter((n) => n.type === 'paragraph').map((n) => clean(mdToString(n)));
-  const description =
-    introParagraphs.slice().sort((a, b) => b.length - a.length)[0] ?? title;
+  const description = introParagraphs.slice().sort((a, b) => b.length - a.length)[0] ?? title;
 
-  const topicList = [...topics, { id: 'other', label: 'Other', slugs: [] }]
-    .map((t) => ({ id: t.id, label: t.label, count: sections.filter((s) => s.topic === t.id).length }))
-    .filter((t) => t.count > 0);
+  const topicList = [...topics, { id: 'other', label: otherTopicLabel, slugs: [] }]
+    .map((tp) => ({
+      id: tp.id,
+      label: tp.label[lang],
+      count: sections.filter((s) => s.topic === tp.id).length,
+    }))
+    .filter((tp) => tp.count > 0);
 
   return {
-    title: title || 'Cheat sheet',
+    lang,
+    base,
+    title: title || t.titleSuffix,
     introHtml: await renderPlain(intro),
     description,
     sections,

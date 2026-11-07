@@ -1,0 +1,9 @@
+---
+import HomePage from '../../components/HomePage.astro';
+import { hasLang } from '../../lib/cheatsheet';
+
+// Without cheatsheet.fr.md there is no French version: send visitors to English.
+if (!hasLang('fr')) return Astro.redirect('/');
+---
+
+<HomePage lang="fr" />

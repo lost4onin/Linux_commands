@@ -1,0 +1,105 @@
+---
+import Base from '../layouts/Base.astro';
+import { getCheatsheet, hasLang, type Section, type Cheatsheet } from '../lib/cheatsheet';
+import { ui, langBase, otherLang, type Lang } from '../i18n';
+
+interface Props {
+  lang: Lang;
+  sheet: Cheatsheet;
+  index: number;
+}
+
+const { lang, sheet, index } = Astro.props;
+const t = ui[lang];
+const base = langBase(lang);
+const section: Section = sheet.sections[index]!;
+const prev = sheet.sections[index - 1];
+const next = sheet.sections[index + 1];
+
+// Same section in the other language (or that language's home page).
+const other = otherLang(lang);
+let alternate: string | undefined;
+if (hasLang(other)) {
+  const otherSheet = await getCheatsheet(other);
+  alternate = otherSheet.sections.find((s) => s.slug === section.slug)?.url ?? `${langBase(other)}/`;
+}
+
+const shortSummary =
+  section.summary.length > 110
+    ? section.summary.slice(0, 107).replace(/\s+\S*$/, '') + '…'
+    : section.summary;
+const description = `${section.heading}. ${shortSummary} — ${sheet.title}.`;
+---
+
+<Base
+  lang={lang}
+  title={`${section.heading} · ${t.titleSuffix}`}
+  description={description}
+  current={section.slug}
+  alternate={alternate}
+>
+  <article class="section-page">
+    <nav class="crumbs" aria-label={t.breadcrumb}>
+      <ol>
+        <li><a href={`${base}/`}>~</a></li>
+        <li><span aria-current="page">{section.slug}</span></li>
+      </ol>
+    </nav>
+
+    <header class="page-head">
+      <h1>
+        {section.number && <span class="h-num">{section.number}.</span>}
+        {' '}{section.title}
+      </h1>
+      <p class="page-meta">
+        {t.entries(section.entryCount)} · <a href={`${base}/all/#${section.slug}`}>{t.seeInFullSheet}</a>
+      </p>
+    </header>
+
+    {
+      section.subheadings.length >= 2 && (
+        <nav class="toc" aria-label={t.onThisPage}>
+          <p class="toc-title" aria-hidden="true">{t.onThisPage}</p>
+          <ul>
+            {section.subheadings.map((h) => (
+              <li>
+                <a href={`#${h.id}`}>{h.text}</a>
+              </li>
+            ))}
+          </ul>
+        </nav>
+      )
+    }
+
+    <div class="prose" set:html={section.html} />
+
+    <nav class="prevnext" aria-label={t.prevNext}>
+      {
+        prev ? (
+          <a class="prevnext-link prev" href={prev.url} rel="prev">
+            <span class="prevnext-dir">{t.previous}</span>
+            <span class="prevnext-title">{prev.heading}</span>
+          </a>
+        ) : (
+          <a class="prevnext-link prev" href={`${base}/`}>
+            <span class="prevnext-dir">{t.home}</span>
+            <span class="prevnext-title">{t.allSections}</span>
+          </a>
+        )
+      }
+      {
+        next ? (
+          <a class="prevnext-link next" href={next.url} rel="next">
+            <span class="prevnext-dir">{t.next}</span>
+            <span class="prevnext-title">{next.heading}</span>
+          </a>
+        ) : (
+          <a class="prevnext-link next" href={`${base}/all/`}>
+            <span class="prevnext-dir">{t.done}</span>
+            <span class="prevnext-title">{t.fullSheet}</span>
+          </a>
+        )
+      }
+    </nav>
+  </article>
+</Base>

@@ -2,6 +2,9 @@
  * Small client script loaded on every page. The search UI (and Fuse.js)
  * is only downloaded the first time search is opened.
  */
+import { readStrings, format } from './strings';
+
+const ui = readStrings();
 const root = document.documentElement;
 const liveStatus = document.getElementById('live-status');
 
@@ -109,11 +112,11 @@ document.addEventListener('click', async (event) => {
   const ok = await copyText(text.replace(/\n$/, ''));
   button.classList.add(ok ? 'is-copied' : 'is-failed');
   const label = button.querySelector('.copy-label');
-  if (label) label.textContent = ok ? 'Copied' : 'Failed';
-  announce(ok ? 'Copied to clipboard' : 'Copy failed');
+  if (label) label.textContent = ok ? ui.copied : ui.failed;
+  announce(ok ? ui.announceCopied : ui.announceFailed);
   window.setTimeout(() => {
     button.classList.remove('is-copied', 'is-failed');
-    if (label) label.textContent = 'Copy';
+    if (label) label.textContent = ui.copy;
   }, 1600);
 });
 
@@ -170,13 +173,14 @@ if (chips) {
     const visible = cards.filter((c) => selected.size === 0 || selected.has(c.dataset.topic!));
     for (const c of cards) c.hidden = !visible.includes(c);
 
-    const slugs = visible.map((c) => c.querySelector('a')!.getAttribute('href')!.replace(/\//g, ''));
+    const slugs = visible.map((c) => c.dataset.slug!);
+    const allUrl = chips.dataset.allUrl ?? '/all/';
     const only = selected.size === 0 ? '' : `only=${slugs.join(',')}`;
-    if (revise) revise.href = `/all/${only ? `?${only}` : ''}`;
-    if (print) print.href = `/all/?${only ? `${only}&` : ''}print=1`;
+    if (revise) revise.href = `${allUrl}${only ? `?${only}` : ''}`;
+    if (print) print.href = `${allUrl}?${only ? `${only}&` : ''}print=1`;
     if (status && count) {
       status.hidden = selected.size === 0;
-      count.textContent = `Showing ${visible.length} of ${cards.length} sections.`;
+      count.textContent = format(ui.showing, { n: visible.length, total: cards.length });
     }
     try {
       sessionStorage.setItem('topics', [...selected].join(','));
@@ -219,7 +223,7 @@ if (onlyParam) {
     const note = document.querySelector<HTMLElement>('[data-only-note]');
     const count = document.querySelector<HTMLElement>('[data-only-count]');
     if (note && count) {
-      count.textContent = `Revision view: ${shown.length} of ${sections.length} sections.`;
+      count.textContent = format(ui.revision, { n: shown.length, total: sections.length });
       note.hidden = false;
     }
   }

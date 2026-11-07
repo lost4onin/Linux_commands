@@ -1,9 +1,13 @@
 ---
 import Base from '../layouts/Base.astro';
-import { site } from '../site.config';
+import { ui } from '../i18n';
 ---
 
-<Base title={`Page not found · ${site.titleSuffix}`} description="This page does not exist. Go back to the cheat sheet home page or search for a command.">
+<Base
+  lang="en"
+  title={`Page not found · ${ui.en.titleSuffix}`}
+  description="This page does not exist. Go back to the cheat sheet home page or search for a command."
+>
   <section class="not-found">
     <h1>Page not found</h1>
     <pre class="terminal-404" aria-label="Terminal message"><span class="prompt">$</span> cd <span data-missing-path>this-page</span>
@@ -11,6 +15,7 @@ bash: cd: No such file or directory</pre>
     <p>
       <a class="btn btn-primary" href="/">Back to all sections</a>
       <button class="btn" type="button" data-search-open aria-haspopup="dialog">Search commands</button>
+      <a class="btn btn-ghost" href="/fr/" hreflang="fr" lang="fr">Version française</a>
     </p>
   </section>
 </Base>

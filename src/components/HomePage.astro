@@ -1,0 +1,71 @@
+---
+import Base from '../layouts/Base.astro';
+import { getCheatsheet, hasLang } from '../lib/cheatsheet';
+import { ui, langBase, otherLang, type Lang } from '../i18n';
+
+interface Props {
+  lang: Lang;
+}
+
+const { lang } = Astro.props;
+const t = ui[lang];
+const base = langBase(lang);
+const other = otherLang(lang);
+const sheet = await getCheatsheet(lang);
+const pad = (n: string) => (n ? n.padStart(2, '0') : '··');
+const alternate = hasLang(other) ? `${langBase(other)}/` : undefined;
+---
+
+<Base lang={lang} title={sheet.title} description={sheet.description} alternate={alternate}>
+  <section class="hero" aria-labelledby="page-title">
+    <p class="prompt-line" aria-hidden="true"><span class="prompt">$</span> cat {t.sourceFile}<span class="caret"></span></p>
+    <h1 id="page-title">{sheet.title}</h1>
+    <div class="intro" set:html={sheet.introHtml} />
+    <div class="hero-actions">
+      <button class="btn btn-primary" type="button" data-search-open aria-haspopup="dialog">
+        {t.searchAll} <kbd aria-hidden="true">/</kbd>
+      </button>
+      <a class="btn" href={`${base}/all/?print=1`} data-print-link>{t.print}</a>
+      <a class="btn btn-ghost" href={`${base}/all/`}>{t.fullSheet}</a>
+    </div>
+  </section>
+
+  <section class="sections" aria-labelledby="sections-title">
+    <div class="sections-head">
+      <h2 id="sections-title">{t.sections}</h2>
+      <div class="chips" role="group" aria-label={t.filterByTopic} data-chips data-all-url={`${base}/all/`} hidden>
+        <button type="button" class="chip" aria-pressed="true" data-topic="all">{t.allTopics}</button>
+        {
+          sheet.topics.map((tp) => (
+            <button type="button" class="chip" aria-pressed="false" data-topic={tp.id}>
+              {tp.label}
+              <span class="chip-count" aria-hidden="true">{tp.count}</span>
+            </button>
+          ))
+        }
+      </div>
+    </div>
+    <p class="filter-status" data-filter-status hidden>
+      <span data-filter-count></span>
+      <a href={`${base}/all/`} data-revise-link>{t.reviseThese}</a>
+    </p>
+
+    <ul class="cards" role="list">
+      {
+        sheet.sections.map((s) => (
+          <li class="card" data-topic={s.topic} data-slug={s.slug}>
+            <a href={s.url}>
+              <span class="card-num" aria-hidden="true">{pad(s.number)}</span>
+              <h3 class="card-title">
+                {s.number && <span class="sr-only">{s.number}. </span>}
+                {s.title}
+              </h3>
+              <p class:list={['card-desc', { 'is-commands': s.summaryIsCommands }]}>{s.summary}</p>
+              <span class="card-meta">{t.entries(s.entryCount)}</span>
+            </a>
+          </li>
+        ))
+      }
+    </ul>
+  </section>
+</Base>

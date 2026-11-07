@@ -10,20 +10,20 @@ const site =
     ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
     : undefined);
 
-const CHEATSHEET = path.resolve('cheatsheet.md');
+const CHEATSHEETS = [path.resolve('cheatsheet.md'), path.resolve('cheatsheet.fr.md')];
 
 /**
- * cheatsheet.md is read with fs at build time, so Vite does not know about it.
- * This reloads the browser in `npm run dev` whenever the file is saved.
+ * The cheat sheets are read with fs at build time, so Vite does not know about them.
+ * This reloads the browser in `npm run dev` whenever one of them is saved.
  * @returns {import('vite').Plugin}
  */
 function reloadOnCheatsheetChange() {
   return {
     name: 'reload-on-cheatsheet-change',
     configureServer(server) {
-      server.watcher.add(CHEATSHEET);
+      server.watcher.add(CHEATSHEETS);
       server.watcher.on('change', (file) => {
-        if (path.resolve(file) === CHEATSHEET) {
+        if (CHEATSHEETS.includes(path.resolve(file))) {
           server.environments.client.hot.send({ type: 'full-reload', path: '*' });
         }
       });
