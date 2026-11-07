@@ -368,13 +368,20 @@ if (trail && window.matchMedia('(hover: hover) and (pointer: fine)').matches && 
   const pixels = new Map<string, Pixel>();
   let width = 0;
   let height = 0;
+  let left = 0;
+  let top = 0;
   let running = false;
   let last: { x: number; y: number } | undefined;
 
+  // Size the drawing to the canvas's real box on screen, so a pixel drawn at
+  // (x, y) appears exactly under a cursor at (x, y).
   const resize = () => {
+    const rect = trail.getBoundingClientRect();
     const dpr = Math.min(2, window.devicePixelRatio || 1);
-    width = window.innerWidth;
-    height = window.innerHeight;
+    width = rect.width;
+    height = rect.height;
+    left = rect.left;
+    top = rect.top;
     trail.width = Math.round(width * dpr);
     trail.height = Math.round(height * dpr);
     ctx?.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -387,19 +394,22 @@ if (trail && window.matchMedia('(hover: hover) and (pointer: fine)').matches && 
   const spawn = (px: number, py: number, now: number, colors: string[]) => {
     const gx = Math.floor(px / CELL);
     const gy = Math.floor(py / CELL);
+    const put = (cx: number, cy: number, color: string, alpha: number) =>
+      pixels.set(`${cx},${cy}`, { x: cx * CELL, y: cy * CELL, born: now, color, alpha });
+
+    // A sparse halo around the cursor…
     for (let dx = -RADIUS; dx <= RADIUS; dx++) {
       for (let dy = -RADIUS; dy <= RADIUS; dy++) {
         const d = Math.hypot(dx, dy);
-        if (d > RADIUS || Math.random() > (1 - d / (RADIUS + 0.5)) * 0.42) continue;
+        if (d < 1.5 || d > RADIUS || Math.random() > (1 - d / (RADIUS + 0.5)) * 0.4) continue;
         const red = Math.random() < 0.035; // the odd red "alert" pixel
-        pixels.set(`${gx + dx},${gy + dy}`, {
-          x: (gx + dx) * CELL,
-          y: (gy + dy) * CELL,
-          born: now,
-          color: red ? '#d9142b' : colors[Math.floor(Math.random() * colors.length)]!,
-          alpha: 0.35 + Math.random() * 0.55,
-        });
+        put(gx + dx, gy + dy, red ? '#d9142b' : colors[Math.floor(Math.random() * colors.length)]!, 0.3 + Math.random() * 0.5);
       }
+    }
+    // …and a solid core: the cell under the cursor and its neighbours always light up.
+    put(gx, gy, colors[0]!, 0.95);
+    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]] as const) {
+      put(gx + dx, gy + dy, colors[Math.random() < 0.5 ? 0 : 1]!, 0.7);
     }
   };
 
@@ -430,14 +440,17 @@ if (trail && window.matchMedia('(hover: hover) and (pointer: fine)').matches && 
       if (!width) resize();
       const now = performance.now();
       const colors = palette();
+      // Cursor position inside the canvas.
+      const x = event.clientX - left;
+      const y = event.clientY - top;
       // Fill the gap when the mouse moves fast.
-      const from = last ?? { x: event.clientX, y: event.clientY };
-      const steps = Math.max(1, Math.min(8, Math.ceil(Math.hypot(event.clientX - from.x, event.clientY - from.y) / (CELL * 2))));
+      const from = last ?? { x, y };
+      const steps = Math.max(1, Math.min(8, Math.ceil(Math.hypot(x - from.x, y - from.y) / (CELL * 2))));
       for (let i = 1; i <= steps; i++) {
         const k = i / steps;
-        spawn(from.x + (event.clientX - from.x) * k, from.y + (event.clientY - from.y) * k, now, colors);
+        spawn(from.x + (x - from.x) * k, from.y + (y - from.y) * k, now, colors);
       }
-      last = { x: event.clientX, y: event.clientY };
+      last = { x, y };
       if (!running) {
         running = true;
         requestAnimationFrame(draw);
@@ -446,7 +459,8 @@ if (trail && window.matchMedia('(hover: hover) and (pointer: fine)').matches && 
     { passive: true },
   );
   document.documentElement.addEventListener('pointerleave', () => (last = undefined));
-  window.addEventListener('resize', () => width && resize(), { passive: true });
+  // Re-measure whenever the canvas changes size (window resize, scrollbar appearing…).
+  new ResizeObserver(() => width && resize()).observe(trail);
 }
 
 /* ---------------- Console panel: open on every page, × closes it for this page ---------------- */

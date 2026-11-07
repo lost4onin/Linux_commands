@@ -1879,6 +1879,9 @@ pre.shiki:focus-visible {
   z-index: 20;
   width: 100%;
   height: 100%;
+  /* It sits inside <main>: undo the content-width limit so it covers the whole window. */
+  max-width: none !important;
+  margin: 0 !important;
   pointer-events: none;
   mix-blend-mode: multiply;
 }
