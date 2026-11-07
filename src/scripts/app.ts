@@ -350,6 +350,105 @@ if (tabbar) {
   requestAnimationFrame(() => requestAnimationFrame(onScroll));
 }
 
+/* ---------------- Home: pixel trail around the cursor ---------------- */
+
+const trail = document.querySelector<HTMLCanvasElement>('[data-pixel-trail]');
+if (trail && window.matchMedia('(hover: hover) and (pointer: fine)').matches && !reduceMotion.matches) {
+  const ctx = trail.getContext('2d');
+  const CELL = 14; // pixel size, in CSS px
+  const RADIUS = 4; // in cells
+  const LIFE = 700; // ms before a pixel has faded out
+  interface Pixel {
+    x: number;
+    y: number;
+    born: number;
+    color: string;
+    alpha: number;
+  }
+  const pixels = new Map<string, Pixel>();
+  let width = 0;
+  let height = 0;
+  let running = false;
+  let last: { x: number; y: number } | undefined;
+
+  const resize = () => {
+    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    width = window.innerWidth;
+    height = window.innerHeight;
+    trail.width = Math.round(width * dpr);
+    trail.height = Math.round(height * dpr);
+    ctx?.setTransform(dpr, 0, 0, dpr, 0, 0);
+  };
+  const palette = () =>
+    root.dataset.theme === 'dark'
+      ? ['#5eff88', '#5eff88', '#86d9a2', '#2f8f55', '#1e5c46']
+      : ['#0a7a43', '#2f9a62', '#86d9a2', '#5eff88', '#0b191b'];
+
+  const spawn = (px: number, py: number, now: number, colors: string[]) => {
+    const gx = Math.floor(px / CELL);
+    const gy = Math.floor(py / CELL);
+    for (let dx = -RADIUS; dx <= RADIUS; dx++) {
+      for (let dy = -RADIUS; dy <= RADIUS; dy++) {
+        const d = Math.hypot(dx, dy);
+        if (d > RADIUS || Math.random() > (1 - d / (RADIUS + 0.5)) * 0.42) continue;
+        const red = Math.random() < 0.035; // the odd red "alert" pixel
+        pixels.set(`${gx + dx},${gy + dy}`, {
+          x: (gx + dx) * CELL,
+          y: (gy + dy) * CELL,
+          born: now,
+          color: red ? '#d9142b' : colors[Math.floor(Math.random() * colors.length)]!,
+          alpha: 0.35 + Math.random() * 0.55,
+        });
+      }
+    }
+  };
+
+  const draw = (now: number) => {
+    if (!ctx) return;
+    ctx.clearRect(0, 0, width, height);
+    for (const [key, p] of pixels) {
+      const age = (now - p.born) / LIFE;
+      if (age >= 1) {
+        pixels.delete(key);
+        continue;
+      }
+      // Fade out and shrink a little: pixels "dissolve".
+      const inset = age > 0.55 ? 3 : 1;
+      ctx.globalAlpha = p.alpha * (1 - age) ** 1.6;
+      ctx.fillStyle = p.color;
+      ctx.fillRect(p.x + inset, p.y + inset, CELL - inset * 2, CELL - inset * 2);
+    }
+    ctx.globalAlpha = 1;
+    if (pixels.size) requestAnimationFrame(draw);
+    else running = false;
+  };
+
+  document.addEventListener(
+    'pointermove',
+    (event) => {
+      if (event.pointerType !== 'mouse') return;
+      if (!width) resize();
+      const now = performance.now();
+      const colors = palette();
+      // Fill the gap when the mouse moves fast.
+      const from = last ?? { x: event.clientX, y: event.clientY };
+      const steps = Math.max(1, Math.min(8, Math.ceil(Math.hypot(event.clientX - from.x, event.clientY - from.y) / (CELL * 2))));
+      for (let i = 1; i <= steps; i++) {
+        const k = i / steps;
+        spawn(from.x + (event.clientX - from.x) * k, from.y + (event.clientY - from.y) * k, now, colors);
+      }
+      last = { x: event.clientX, y: event.clientY };
+      if (!running) {
+        running = true;
+        requestAnimationFrame(draw);
+      }
+    },
+    { passive: true },
+  );
+  document.documentElement.addEventListener('pointerleave', () => (last = undefined));
+  window.addEventListener('resize', () => width && resize(), { passive: true });
+}
+
 /* ---------------- Console panel: open / close (remembered) ---------------- */
 
 const consoleToggle = document.querySelector<HTMLButtonElement>('[data-console-toggle]');

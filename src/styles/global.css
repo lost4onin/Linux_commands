@@ -1842,6 +1842,19 @@ pre.shiki:focus-visible {
 .site-footer p {
   margin: 0;
 }
+/* Pixel trail around the cursor (home page) */
+.pixel-trail {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  mix-blend-mode: multiply;
+}
+:root[data-theme='dark'] .pixel-trail {
+  mix-blend-mode: screen;
+}
 
 .not-found {
   padding: 1rem 0 2rem;
@@ -1930,6 +1943,7 @@ pre.shiki:focus-visible {
   }
 
   .tabbar,
+  .pixel-trail,
   .console,
   .dock,
   .skip-link,

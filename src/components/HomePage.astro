@@ -43,6 +43,7 @@ const tags = ['rm -rf dir', 'kill -9 PID', 'sort f > f', 'SIGKILL'];
   alternate={alternate}
   consoleScript={script}
 >
+  <canvas class="pixel-trail" aria-hidden="true" data-pixel-trail></canvas>
   <section class="hero" id="top" aria-labelledby="page-title" data-spotlight>
     <div class="hero-bg" aria-hidden="true">
       {ghosts.map((g, i) => <span class={`ghost g${i + 1}`} data-text={g} />)}
