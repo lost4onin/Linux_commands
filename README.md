@@ -6,15 +6,18 @@ the Unix/Linux cheat sheet for the Operating Systems exam.
 - English and French versions, with a **Français / English** button on every page
   (French pages live under `/fr/`, from [`cheatsheet.fr.md`](cheatsheet.fr.md))
 - One page per `##` section (`/files/`, `/processes/`, …) plus a home page with cards
-- Sticky sidebar on desktop, hamburger menu on mobile, previous/next links
+- Section 12, **EXAM 2017-2018 recreated**: the Operating Systems exam paper retyped
+  (questions only), in French and English
+- A tab strip at the top to move between sections, plus previous/next links
 - Instant search over every command (press `/` or `Ctrl K`)
 - Copy buttons on commands and code blocks
 - Light/dark theme (follows the system until you pick one)
 - Phone-friendly tables: horizontal scroll, sticky first column
 - Print stylesheet and a one-page "full sheet" for printing or saving as PDF
-- Console-style interface: a tab strip that follows your scroll position, a
-  `console.log` panel listing the commands of the page you are reading (wide screens),
-  and a floating dock with home, previous/next, language, theme and search
+- Console-style interface: a `console.log` panel listing the commands of the page you
+  are reading (wide screens), a floating dock with home, previous/next, language, theme
+  and search, and a pixel trail around the mouse on the home page
+- Refreshing a page takes you back to the home page
 - No server code, no database, no external fonts or trackers
 
 Built with [Astro](https://astro.build) (static output), plain CSS and a few kilobytes
@@ -40,7 +43,7 @@ Edit **`cheatsheet.md`** only. Nothing else needs to change.
 | `# Title` (first line) | Site title, home page heading |
 | Text before the first `##` | Intro on the home page and the full sheet |
 | `## 3. Files: create, copy, …` | A new page. The number becomes the badge, the text the title |
-| `### Sub-heading` | A sub-heading, listed under "On this page" |
+| `### Sub-heading` | A sub-heading, listed in the console panel |
 | Tables, lists, paragraphs | Rendered as written, and added to the search |
 | ```` ```bash ```` / ```` ```c ```` code blocks | Highlighted, with a Copy button |
 
@@ -94,8 +97,8 @@ Delete `cheatsheet.fr.md` and the site goes back to English only (the button dis
 | `src/components/SectionPage.astro` | One section with prev/next links |
 | `src/components/AllPage.astro` | All sections on one page, used for printing |
 | `src/pages/` | Routes: `/`, `/[slug]/`, `/all/` and the same under `/fr/`, plus `search-index.json` for each language |
-| `src/layouts/Base.astro` | Page shell: tab strip, sidebar, console panel, dock, search dialog |
-| `src/scripts/app.ts` | Theme, menu, copy buttons, keyboard shortcuts, chips, tab/console scroll tracking, hero effects |
+| `src/layouts/Base.astro` | Page shell: tab strip, console panel, dock, footer credit, search dialog |
+| `src/scripts/app.ts` | Theme, copy buttons, keyboard shortcuts, chips, tab strip, console scroll tracking, hero effects, pixel trail |
 | `src/scripts/search.ts` | Search dialog with Fuse.js, loaded the first time search opens |
 | `src/styles/global.css` | All styles: colour tokens for both themes, layout, print |
 | `public/` | Favicon, social image (`og.png`), `robots.txt`, and the self-hosted pixel font |
@@ -105,16 +108,22 @@ Delete `cheatsheet.fr.md` and the site goes back to English only (the button dis
 The look is a terminal / IDE: near-black teal with neon mint in dark mode, pale mint
 paper in light mode, monospace labels, thin headlines and a pixel font for big numbers.
 
-- **Tab strip** (top): one tab per part of the page (`files.page`,
-  `hard-link-vs-symbolic-link.section`, …), highlighted while you scroll, with a
-  reading-progress line.
+- **Tab strip** (top): the site navigation. One tab per page (`index.page`,
+  `files.section`, …, `all.page`); the current one is highlighted and scrolled into
+  view. Use the ‹ › arrows or the mouse wheel when it is wider than the screen. A thin
+  line under it shows how far you have read.
 - **`console.log` panel** (screens 1408 px and wider): lists the commands of the
   section, typed out on load. The line for the row you are reading is highlighted;
   click a line to jump to it. Close it with the × in the tab strip (remembered).
 - **Dock** (bottom): home, previous/next section, full sheet, language, theme, search.
-  On phones it also opens the sections menu.
-- **Home**: the grid follows the mouse; red tags mark the sheet's dangerous commands
-  (`rm -rf dir`, `kill -9 PID`, `sort f > f`, `SIGKILL`).
+- **Home**: pixels light up and fade around the mouse, the grid follows it, and red tags
+  mark the sheet's dangerous commands (`rm -rf dir`, `kill -9 PID`, `sort f > f`,
+  `SIGKILL`). The pixel trail is off on touch screens.
+- **Refresh**: reloading any page sends you to the home page of its language (`/` or
+  `/fr/`). This is switched off in `npm run dev`, where saving `cheatsheet.md`
+  reloads the page.
+- **Footer**: "Made by Akrem Medimagh · ITI3". Change it in `author` in
+  [`src/site.config.ts`](src/site.config.ts).
 - Animations are switched off when the system asks for reduced motion.
 
 Colours are CSS variables at the top of `src/styles/global.css`. The pixel font is
