@@ -263,3 +263,186 @@ if (params.get('print') === '1' && document.querySelector('.all-page')) {
 
 const missing = document.querySelector('[data-missing-path]');
 if (missing) missing.textContent = location.pathname;
+
+/* ---------------- Tab strip + console: follow the scroll position ---------------- */
+
+const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+const tabbar = document.querySelector<HTMLElement>('.tabbar');
+const tabLinks = [...document.querySelectorAll<HTMLAnchorElement>('.tabs a[data-tab]')];
+const consoleList = document.querySelector<HTMLElement>('.console-lines');
+const consoleLinks = [...document.querySelectorAll<HTMLAnchorElement>('[data-console-target]')];
+
+interface Spy {
+  link: HTMLElement;
+  target: HTMLElement;
+}
+const byId = (id: string) => document.getElementById(decodeURIComponent(id));
+const tabSpies: Spy[] = tabLinks
+  .map((link) => ({ link, target: byId(link.hash.slice(1))! }))
+  .filter((s) => s.target);
+const consoleSpies: Spy[] = consoleLinks
+  .map((link) => ({ link: link.parentElement!, target: byId(link.dataset.consoleTarget!)! }))
+  .filter((s) => s.target);
+
+/** The last target whose top has passed the reading line. */
+function current(spies: Spy[], line: number): Spy | undefined {
+  let found: Spy | undefined;
+  for (const s of spies) {
+    if (s.target.offsetParent === null && !s.target.getClientRects().length) continue; // hidden
+    if (s.target.getBoundingClientRect().top <= line) found = s;
+    else break;
+  }
+  return found ?? spies[0];
+}
+
+let activeTab: Spy | undefined;
+let activeLine: Spy | undefined;
+let ticking = false;
+
+function onScroll() {
+  ticking = false;
+
+  // 1. Read layout (all reads before any write, so the browser lays out once).
+  const max = document.documentElement.scrollHeight - window.innerHeight;
+  const progress = max > 0 ? Math.min(1, window.scrollY / max) : 0;
+  const line = (tabbar?.offsetHeight ?? 36) + window.innerHeight * 0.25;
+  const tab = current(tabSpies, line);
+  const strip = tab?.link.closest<HTMLElement>('.tabs');
+  const tabScroll =
+    tab && strip && tab !== activeTab
+      ? (() => {
+          const { offsetLeft, offsetWidth } = tab.link;
+          const outside =
+            offsetLeft < strip.scrollLeft || offsetLeft + offsetWidth > strip.scrollLeft + strip.clientWidth;
+          return outside ? offsetLeft - 24 : undefined;
+        })()
+      : undefined;
+  const consoleShown = Boolean(consoleList && consoleList.offsetParent !== null);
+  const cl = consoleShown ? current(consoleSpies, line) : undefined;
+  const consoleTop =
+    consoleShown && cl && cl !== activeLine ? cl.link.offsetTop - consoleList!.clientHeight / 3 : undefined;
+
+  // 2. Write.
+  tabbar?.style.setProperty('--progress', String(progress));
+  if (tab !== activeTab) {
+    activeTab?.link.removeAttribute('aria-current');
+    tab?.link.setAttribute('aria-current', 'location');
+    activeTab = tab;
+    // Keep the active tab visible in the (horizontally scrolling) strip.
+    if (strip && tabScroll !== undefined) strip.scrollTo({ left: tabScroll });
+  }
+  if (consoleShown && cl !== activeLine) {
+    activeLine?.link.classList.remove('is-active');
+    cl?.link.classList.add('is-active');
+    activeLine = cl;
+    // Keep the active line in view inside the console only (not the page).
+    if (consoleTop !== undefined) {
+      consoleList!.scrollTo({ top: consoleTop, behavior: reduceMotion.matches ? 'auto' : 'smooth' });
+    }
+  }
+}
+
+if (tabbar) {
+  const request = () => {
+    if (!ticking) {
+      ticking = true;
+      requestAnimationFrame(onScroll);
+    }
+  };
+  window.addEventListener('scroll', request, { passive: true });
+  window.addEventListener('resize', request, { passive: true });
+  // First pass after the first paint, when layout is already done (no forced reflow).
+  requestAnimationFrame(() => requestAnimationFrame(onScroll));
+}
+
+/* ---------------- Console panel: open / close (remembered) ---------------- */
+
+const consoleToggle = document.querySelector<HTMLButtonElement>('[data-console-toggle]');
+if (consoleToggle) {
+  const sync = () => consoleToggle.setAttribute('aria-expanded', String(root.dataset.console !== 'closed'));
+  sync();
+  consoleToggle.addEventListener('click', () => {
+    if (root.dataset.console === 'closed') delete root.dataset.console;
+    else root.dataset.console = 'closed';
+    try {
+      localStorage.setItem('console', root.dataset.console ?? 'open');
+    } catch {
+      /* ignore */
+    }
+    sync();
+    onScroll();
+  });
+}
+
+/* ---------------- Hero: grid spotlight follows the pointer ---------------- */
+
+const spotlight = document.querySelector<HTMLElement>('[data-spotlight]');
+const spotlightBg = spotlight?.querySelector<HTMLElement>('.hero-bg');
+if (spotlight && spotlightBg && window.matchMedia('(hover: hover)').matches) {
+  let frame = 0;
+  spotlight.addEventListener('pointermove', (event) => {
+    cancelAnimationFrame(frame);
+    frame = requestAnimationFrame(() => {
+      const r = spotlightBg.getBoundingClientRect();
+      spotlightBg.style.setProperty('--mx', `${event.clientX - r.left}px`);
+      spotlightBg.style.setProperty('--my', `${event.clientY - r.top}px`);
+    });
+  });
+}
+
+/* ---------------- Scroll reveal ---------------- */
+
+const revealItems = document.querySelectorAll<HTMLElement>('[data-reveal]');
+if (revealItems.length && 'IntersectionObserver' in window && !reduceMotion.matches) {
+  const io = new IntersectionObserver(
+    (entries) => {
+      for (const e of entries) {
+        if (!e.isIntersecting) continue;
+        const el = e.target as HTMLElement;
+        // Small stagger for items that appear together.
+        el.style.transitionDelay = `${Math.min(Number(el.dataset.revealIndex ?? 0), 6) * 40}ms`;
+        el.classList.add('is-visible');
+        io.unobserve(el);
+      }
+    },
+    { rootMargin: '0px 0px -8% 0px' },
+  );
+  revealItems.forEach((el, i) => {
+    el.dataset.revealIndex = String(i % 3);
+    io.observe(el);
+  });
+} else {
+  revealItems.forEach((el) => el.classList.add('is-visible'));
+}
+
+/* ---------------- "Decrypt" effect on hover (card labels) ---------------- */
+
+const GLYPHS = '!<>-_/[]{}=+*^?#01$%';
+function scramble(el: HTMLElement) {
+  const original = el.dataset.text ?? el.textContent ?? '';
+  el.dataset.text = original;
+  if (reduceMotion.matches || el.dataset.busy) return;
+  el.dataset.busy = '1';
+  const start = performance.now();
+  const duration = 420;
+  const step = (now: number) => {
+    const p = Math.min(1, (now - start) / duration);
+    const settled = Math.floor(p * original.length);
+    el.textContent =
+      original.slice(0, settled) +
+      [...original.slice(settled)]
+        .map((ch) => (ch === ' ' ? ' ' : GLYPHS[Math.floor(Math.random() * GLYPHS.length)]))
+        .join('');
+    if (p < 1) requestAnimationFrame(step);
+    else {
+      el.textContent = original;
+      delete el.dataset.busy;
+    }
+  };
+  requestAnimationFrame(step);
+}
+document.querySelectorAll<HTMLElement>('[data-scramble]').forEach((label) => {
+  const host = label.closest('a') ?? label;
+  host.addEventListener('pointerenter', () => scramble(label));
+  host.addEventListener('focus', () => scramble(label));
+});

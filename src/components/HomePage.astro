@@ -1,5 +1,5 @@
 ---
-import Base from '../layouts/Base.astro';
+import Base, { type ScriptLine } from '../layouts/Base.astro';
 import { getCheatsheet, hasLang } from '../lib/cheatsheet';
 import { ui, langBase, otherLang, type Lang } from '../i18n';
 
@@ -14,23 +14,64 @@ const other = otherLang(lang);
 const sheet = await getCheatsheet(lang);
 const pad = (n: string) => (n ? n.padStart(2, '0') : '··');
 const alternate = hasLang(other) ? `${langBase(other)}/` : undefined;
+
+const commandCount = sheet.sections.reduce((n, s) => n + s.console.filter((l) => l.k === 'cmd').length, 0);
+const entryCount = sheet.sections.reduce((n, s) => n + s.entryCount, 0);
+
+// A short shell session typed out in the console panel. Real commands, real output.
+const script: ScriptLine[] = [
+  { k: 'in', t: `head -n 1 ${t.sourceFile}` },
+  { k: 'out', t: `# ${sheet.title}` },
+  { k: 'in', t: 'ls sections/' },
+  { k: 'out', t: sheet.sections.map((s) => s.slug).join('  ') },
+  { k: 'in', t: `grep -c "" ${t.sourceFile}` },
+  { k: 'out', t: String(sheet.sourceLines) },
+  { k: 'in', t: `echo "${t.echoHint}"` },
+  { k: 'out', t: t.echoHint },
+];
+
+// Decoration: commands from the sheet. Red tags mark the dangerous ones.
+const ghosts = ['ps aux', 'chmod 750 file', 'grep -v pat', 'pid_t fork(void)', 'ls -al', '[[ $# -lt 2 ]]', 'shmat(id, NULL, 0)'];
+const tags = ['rm -rf dir', 'kill -9 PID', 'sort f > f', 'SIGKILL'];
 ---
 
-<Base lang={lang} title={sheet.title} description={sheet.description} alternate={alternate}>
-  <section class="hero" aria-labelledby="page-title">
+<Base
+  lang={lang}
+  title={sheet.title}
+  description={sheet.description}
+  alternate={alternate}
+  tabs={[
+    { href: '#top', label: t.homeTab },
+    { href: '#sections', label: t.sectionsTab },
+  ]}
+  consoleScript={script}
+>
+  <section class="hero" id="top" aria-labelledby="page-title" data-spotlight>
+    <div class="hero-bg" aria-hidden="true">
+      {ghosts.map((g, i) => <span class={`ghost g${i + 1}`} data-text={g} />)}
+      {tags.map((tag, i) => <span class={`tag t${i + 1}`}>{tag}</span>)}
+    </div>
+
     <p class="prompt-line" aria-hidden="true"><span class="prompt">$</span> cat {t.sourceFile}<span class="caret"></span></p>
-    <h1 id="page-title">{sheet.title}</h1>
+    <h1 id="page-title" class="hero-title">{sheet.title}</h1>
     <div class="intro" set:html={sheet.introHtml} />
     <div class="hero-actions">
-      <button class="btn btn-primary" type="button" data-search-open aria-haspopup="dialog">
-        {t.searchAll} <kbd aria-hidden="true">/</kbd>
+      <button class="btn-cta" type="button" data-search-open aria-haspopup="dialog">
+        <span class="btn-cta-icon" aria-hidden="true">/</span>
+        <span class="btn-cta-label">{t.searchAll}</span>
       </button>
       <a class="btn" href={`${base}/all/?print=1`} data-print-link>{t.print}</a>
       <a class="btn btn-ghost" href={`${base}/all/`}>{t.fullSheet}</a>
     </div>
+
+    <dl class="stats frame">
+      <div class="stat"><dt>{t.statSections}</dt><dd>{sheet.sections.length}</dd></div>
+      <div class="stat"><dt>{t.statCommands}</dt><dd>{commandCount}</dd></div>
+      <div class="stat"><dt>{t.statEntries}</dt><dd>{entryCount}</dd></div>
+    </dl>
   </section>
 
-  <section class="sections" aria-labelledby="sections-title">
+  <section class="sections" id="sections" aria-labelledby="sections-title">
     <div class="sections-head">
       <h2 id="sections-title">{t.sections}</h2>
       <div class="chips" role="group" aria-label={t.filterByTopic} data-chips data-all-url={`${base}/all/`} hidden>
@@ -53,15 +94,20 @@ const alternate = hasLang(other) ? `${langBase(other)}/` : undefined;
     <ul class="cards" role="list">
       {
         sheet.sections.map((s) => (
-          <li class="card" data-topic={s.topic} data-slug={s.slug}>
+          <li class="card" data-topic={s.topic} data-slug={s.slug} data-reveal>
             <a href={s.url}>
-              <span class="card-num" aria-hidden="true">{pad(s.number)}</span>
+              <span class="card-num" aria-hidden="true" data-scramble>
+                {pad(s.number)}.{s.slug}
+              </span>
               <h3 class="card-title">
                 {s.number && <span class="sr-only">{s.number}. </span>}
                 {s.title}
               </h3>
               <p class:list={['card-desc', { 'is-commands': s.summaryIsCommands }]}>{s.summary}</p>
-              <span class="card-meta">{t.entries(s.entryCount)}</span>
+              <span class="card-meta">
+                {t.entries(s.entryCount)}
+                <span class="card-arrow" aria-hidden="true">→</span>
+              </span>
             </a>
           </li>
         ))

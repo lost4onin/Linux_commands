@@ -21,13 +21,23 @@ const alternate = hasLang(other) ? `${langBase(other)}/all/` : undefined;
   description={t.fullSheetDescription(sheet.title)}
   current="all"
   alternate={alternate}
+  tabs={[
+    { href: '#top', label: t.allTab },
+    ...sheet.sections.map((s) => ({ href: `#${s.slug}`, label: `${s.slug}.section` })),
+  ]}
+  consoleLines={sheet.sections.map((s) => ({ k: 'cmd' as const, t: `cd ${s.slug}`, id: s.slug }))}
 >
   <article class="all-page">
-    <header class="page-head">
-      <h1>{sheet.title}</h1>
+    <header class="page-head" id="top">
+      <h1 class="hero-title">{sheet.title}</h1>
       <div class="intro" set:html={sheet.introHtml} />
       <div class="all-actions">
-        <button class="btn btn-primary" type="button" data-print>{t.print}</button>
+        <button class="btn-cta" type="button" data-print>
+          <span class="btn-cta-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="18" height="18"><path d="M7 9V3h10v6M7 17H5a2 2 0 0 1-2-2v-4a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2h-2M7 14h10v7H7z" /></svg>
+          </span>
+          <span class="btn-cta-label">{t.print}</span>
+        </button>
         <p class="filter-note" data-only-note hidden>
           <span data-only-count></span>
           <a href={`${base}/all/`}>{t.showAll}</a>

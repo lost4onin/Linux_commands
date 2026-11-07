@@ -15,6 +15,7 @@ const base = langBase(lang);
 const section: Section = sheet.sections[index]!;
 const prev = sheet.sections[index - 1];
 const next = sheet.sections[index + 1];
+const pad = (n: string) => (n ? n.padStart(2, '0') : '··');
 
 // Same section in the other language (or that language's home page).
 const other = otherLang(lang);
@@ -29,6 +30,11 @@ const shortSummary =
     ? section.summary.slice(0, 107).replace(/\s+\S*$/, '') + '…'
     : section.summary;
 const description = `${section.heading}. ${shortSummary} — ${sheet.title}.`;
+
+const tabs = [
+  { href: '#top', label: `${section.slug}.page` },
+  ...section.subheadings.map((h) => ({ href: `#${h.id}`, label: `${h.id}.section` })),
+];
 ---
 
 <Base
@@ -37,16 +43,17 @@ const description = `${section.heading}. ${shortSummary} — ${sheet.title}.`;
   description={description}
   current={section.slug}
   alternate={alternate}
+  tabs={tabs}
+  consoleLines={section.console}
+  prev={prev && { url: prev.url, title: prev.heading }}
+  next={next && { url: next.url, title: next.heading }}
 >
   <article class="section-page">
-    <nav class="crumbs" aria-label={t.breadcrumb}>
-      <ol>
-        <li><a href={`${base}/`}>~</a></li>
-        <li><span aria-current="page">{section.slug}</span></li>
-      </ol>
-    </nav>
-
-    <header class="page-head">
+    <header class="section-banner frame" id="top">
+      <p class="banner-pixel" aria-hidden="true">
+        <span class="banner-num">{pad(section.number)}</span>
+        {section.shortTitle}
+      </p>
       <h1>
         {section.number && <span class="h-num">{section.number}.</span>}
         {' '}{section.title}
@@ -56,32 +63,17 @@ const description = `${section.heading}. ${shortSummary} — ${sheet.title}.`;
       </p>
     </header>
 
-    {
-      section.subheadings.length >= 2 && (
-        <nav class="toc" aria-label={t.onThisPage}>
-          <p class="toc-title" aria-hidden="true">{t.onThisPage}</p>
-          <ul>
-            {section.subheadings.map((h) => (
-              <li>
-                <a href={`#${h.id}`}>{h.text}</a>
-              </li>
-            ))}
-          </ul>
-        </nav>
-      )
-    }
-
     <div class="prose" set:html={section.html} />
 
     <nav class="prevnext" aria-label={t.prevNext}>
       {
         prev ? (
-          <a class="prevnext-link prev" href={prev.url} rel="prev">
+          <a class="prevnext-link prev" href={prev.url} rel="prev" data-reveal>
             <span class="prevnext-dir">{t.previous}</span>
             <span class="prevnext-title">{prev.heading}</span>
           </a>
         ) : (
-          <a class="prevnext-link prev" href={`${base}/`}>
+          <a class="prevnext-link prev" href={`${base}/`} data-reveal>
             <span class="prevnext-dir">{t.home}</span>
             <span class="prevnext-title">{t.allSections}</span>
           </a>
@@ -89,12 +81,12 @@ const description = `${section.heading}. ${shortSummary} — ${sheet.title}.`;
       }
       {
         next ? (
-          <a class="prevnext-link next" href={next.url} rel="next">
+          <a class="prevnext-link next" href={next.url} rel="next" data-reveal>
             <span class="prevnext-dir">{t.next}</span>
             <span class="prevnext-title">{next.heading}</span>
           </a>
         ) : (
-          <a class="prevnext-link next" href={`${base}/all/`}>
+          <a class="prevnext-link next" href={`${base}/all/`} data-reveal>
             <span class="prevnext-dir">{t.done}</span>
             <span class="prevnext-title">{t.fullSheet}</span>
           </a>
