@@ -231,6 +231,19 @@ if (onlyParam) {
 
 document.querySelectorAll('[data-print]').forEach((b) => b.addEventListener('click', () => window.print()));
 
+// Off-screen sections of the full sheet skip layout (content-visibility), so their
+// height is only estimated. When the page is opened at an #anchor, lay everything
+// out first and jump again so we land on the right section.
+const allPage = document.querySelector('.all-page');
+function jumpToHash() {
+  if (!allPage || !location.hash) return;
+  allPage.classList.add('is-anchored');
+  const target = document.getElementById(decodeURIComponent(location.hash.slice(1)));
+  if (target) requestAnimationFrame(() => target.scrollIntoView({ behavior: 'instant' }));
+}
+jumpToHash();
+window.addEventListener('hashchange', jumpToHash);
+
 if (params.get('print') === '1' && document.querySelector('.all-page')) {
   // Drop ?print=1 so a reload doesn't print again.
   params.delete('print');

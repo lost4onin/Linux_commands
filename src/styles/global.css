@@ -1243,6 +1243,13 @@ pre.shiki:focus-visible {
   margin-top: 3rem;
   padding-top: 1.5rem;
   border-top: 1px solid var(--border);
+  /* The full sheet is long: skip layout of off-screen sections until they scroll in. */
+  content-visibility: auto;
+  contain-intrinsic-size: auto 1800px;
+}
+/* Opened at #anchor: lay everything out so the jump lands in the right place. */
+.all-page.is-anchored .sheet-section {
+  content-visibility: visible;
 }
 .sheet-section > h2 {
   margin: 0 0 1rem;
@@ -1583,6 +1590,7 @@ pre.shiki:focus-visible {
     margin-top: 1.6rem;
     padding-top: 0.8rem;
     border-top: 1.5pt solid #000;
+    content-visibility: visible;
   }
 
   .table-wrap {
