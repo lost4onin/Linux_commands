@@ -120,13 +120,13 @@ const clientStrings = JSON.stringify({
       )
     }
     <script is:inline>
-      // Apply the saved theme (or the system one) and console state before the first paint.
+      // Apply the saved theme (or the system one) before the first paint.
+      // The console panel always starts open.
       (function () {
-        var d = document.documentElement, theme = null, consoleState = null;
-        try { theme = localStorage.getItem('theme'); consoleState = localStorage.getItem('console'); } catch (e) {}
+        var d = document.documentElement, theme = null;
+        try { theme = localStorage.getItem('theme'); } catch (e) {}
         var dark = theme ? theme === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches;
         d.dataset.theme = dark ? 'dark' : 'light';
-        if (consoleState === 'closed') d.dataset.console = 'closed';
         d.classList.add('js');
       })();
     </script>

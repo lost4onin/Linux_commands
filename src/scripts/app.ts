@@ -449,8 +449,13 @@ if (trail && window.matchMedia('(hover: hover) and (pointer: fine)').matches && 
   window.addEventListener('resize', () => width && resize(), { passive: true });
 }
 
-/* ---------------- Console panel: open / close (remembered) ---------------- */
+/* ---------------- Console panel: open on every page, × closes it for this page ---------------- */
 
+try {
+  localStorage.removeItem('console'); // forget the old "closed" setting from earlier versions
+} catch {
+  /* ignore */
+}
 const consoleToggle = document.querySelector<HTMLButtonElement>('[data-console-toggle]');
 if (consoleToggle) {
   const sync = () => consoleToggle.setAttribute('aria-expanded', String(root.dataset.console !== 'closed'));
@@ -458,11 +463,6 @@ if (consoleToggle) {
   consoleToggle.addEventListener('click', () => {
     if (root.dataset.console === 'closed') delete root.dataset.console;
     else root.dataset.console = 'closed';
-    try {
-      localStorage.setItem('console', root.dataset.console ?? 'open');
-    } catch {
-      /* ignore */
-    }
     sync();
     onScroll();
   });

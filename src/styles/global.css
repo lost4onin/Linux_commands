@@ -24,7 +24,7 @@
   --font-pixel: 'Silkscreen', var(--font-mono);
 
   --tabbar-h: 2.25rem;
-  --console-w: 19rem;
+  --console-w: clamp(15rem, 21vw, 19rem);
   --content-w: 62rem;
   --dock-space: 6.5rem;
   --radius: 6px;
@@ -531,7 +531,7 @@ main > * {
 .console {
   display: none;
 }
-@media (min-width: 88rem) {
+@media (min-width: 64rem) {
   .shell.has-console {
     display: grid;
     grid-template-columns: minmax(0, 1fr) var(--console-w);
@@ -988,7 +988,7 @@ main > * {
     display: none;
   }
 }
-@media (min-width: 88rem) and (max-width: 99.99rem) {
+@media (min-width: 72rem) and (max-width: 99.99rem) {
   /* console panel open: less room on the right */
   :root:not([data-console='closed']) .has-console .tag,
   :root:not([data-console='closed']) .has-console .ghost {
