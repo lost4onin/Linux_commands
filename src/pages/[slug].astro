@@ -1,0 +1,88 @@
+---
+import Base from '../layouts/Base.astro';
+import { getCheatsheet } from '../lib/cheatsheet';
+import { site } from '../site.config';
+
+export async function getStaticPaths() {
+  const { sections } = await getCheatsheet();
+  return sections.map((s) => ({ params: { slug: s.slug } }));
+}
+
+// Content is looked up here (not passed as props) so `npm run dev`
+// always shows the latest cheatsheet.md.
+const sheet = await getCheatsheet();
+const i = sheet.sections.findIndex((s) => s.slug === Astro.params.slug);
+if (i === -1) return new Response('Section not found', { status: 404 });
+
+const section = sheet.sections[i]!;
+const prev = sheet.sections[i - 1];
+const next = sheet.sections[i + 1];
+
+const shortSummary = section.summary.length > 110 ? section.summary.slice(0, 107).replace(/\s+\S*$/, '') + '…' : section.summary;
+const description = `${section.heading}. ${shortSummary} — ${sheet.title}.`;
+---
+
+<Base title={`${section.heading} · ${site.titleSuffix}`} description={description} current={section.slug}>
+  <article class="section-page">
+    <nav class="crumbs" aria-label="Breadcrumb">
+      <ol>
+        <li><a href="/">~</a></li>
+        <li><span aria-current="page">{section.slug}</span></li>
+      </ol>
+    </nav>
+
+    <header class="page-head">
+      <h1>
+        {section.number && <span class="h-num">{section.number}.</span>}
+        {' '}{section.title}
+      </h1>
+      <p class="page-meta">{section.entryCount} entries · <a href={`/all/#${section.slug}`}>see it in the full sheet</a></p>
+    </header>
+
+    {
+      section.subheadings.length >= 2 && (
+        <nav class="toc" aria-label="On this page">
+          <p class="toc-title" aria-hidden="true">On this page</p>
+          <ul>
+            {section.subheadings.map((h) => (
+              <li>
+                <a href={`#${h.id}`}>{h.text}</a>
+              </li>
+            ))}
+          </ul>
+        </nav>
+      )
+    }
+
+    <div class="prose" set:html={section.html} />
+
+    <nav class="prevnext" aria-label="Previous and next sections">
+      {
+        prev ? (
+          <a class="prevnext-link prev" href={prev.url} rel="prev">
+            <span class="prevnext-dir">← Previous</span>
+            <span class="prevnext-title">{prev.heading}</span>
+          </a>
+        ) : (
+          <a class="prevnext-link prev" href="/">
+            <span class="prevnext-dir">← Home</span>
+            <span class="prevnext-title">All sections</span>
+          </a>
+        )
+      }
+      {
+        next ? (
+          <a class="prevnext-link next" href={next.url} rel="next">
+            <span class="prevnext-dir">Next →</span>
+            <span class="prevnext-title">{next.heading}</span>
+          </a>
+        ) : (
+          <a class="prevnext-link next" href="/all/">
+            <span class="prevnext-dir">Done →</span>
+            <span class="prevnext-title">Full sheet on one page</span>
+          </a>
+        )
+      }
+    </nav>
+  </article>
+</Base>

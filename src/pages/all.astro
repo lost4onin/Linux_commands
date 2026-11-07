@@ -1,0 +1,40 @@
+---
+import Base from '../layouts/Base.astro';
+import { getCheatsheet } from '../lib/cheatsheet';
+import { site } from '../site.config';
+
+const sheet = await getCheatsheet();
+---
+
+<Base
+  title={`Full sheet · ${site.titleSuffix}`}
+  description={`Every section of the ${sheet.title} on one page, ready to print or save as PDF.`}
+  current="all"
+>
+  <article class="all-page">
+    <header class="page-head">
+      <h1>{sheet.title}</h1>
+      <div class="intro" set:html={sheet.introHtml} />
+      <div class="all-actions">
+        <button class="btn btn-primary" type="button" data-print>Print / Save as PDF</button>
+        <p class="filter-note" data-only-note hidden>
+          <span data-only-count></span>
+          <a href="/all/">Show all sections</a>
+        </p>
+      </div>
+    </header>
+
+    {
+      sheet.sections.map((s) => (
+        <section class="sheet-section" id={s.slug} data-slug={s.slug} aria-labelledby={`${s.slug}-title`}>
+          <h2 id={`${s.slug}-title`}>
+            <a href={s.url}>
+              {s.number && <span class="h-num">{s.number}.</span>} {s.title}
+            </a>
+          </h2>
+          <div class="prose" set:html={s.htmlAll} />
+        </section>
+      ))
+    }
+  </article>
+</Base>
