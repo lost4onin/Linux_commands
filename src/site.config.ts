@@ -29,6 +29,7 @@ export const topics: { id: string; label: { en: string; fr: string }; slugs: str
     slugs: ['processes', 'inter-process-communication'],
   },
   { id: 'memory', label: { en: 'Cache memory', fr: 'Mémoire cache' }, slugs: ['cache-memory'] },
+  { id: 'exam', label: { en: 'Exam', fr: 'Examen' }, slugs: ['exam-2017-2018-recreated'] },
 ];
 
 export const otherTopicLabel = { en: 'Other', fr: 'Autres' };

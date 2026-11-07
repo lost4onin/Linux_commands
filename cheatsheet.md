@@ -560,3 +560,96 @@ No shell commands in this document: it is an exercise on a cache for an assembly
 **Why the exercise works:** addresses `BX` and `BX+2048` are 2 KB apart, which is exactly the cache size, so in a direct-mapped cache they map to the **same line** and keep evicting each other (conflict misses). With 2 ways they can coexist in the same set.
 
 **Typical conclusion:** one small benchmark is not enough to judge a cache; results depend on the access pattern, so compare on varied programs.
+
+## 12. EXAM 2017-2018 recreated
+
+Operating Systems — exam of ... — 2h00
+
+**Allowed and forbidden materials**
+
+- course handouts and your own lecture notes are allowed (no photocopies)
+- copying from your neighbour is not allowed
+- calculators are forbidden
+
+**Note:** every answer must be justified (explanation/calculation/observation)
+
+### 1. Number representation [3 points]
+
+We use the IEEE 754 single-precision standard (32 bits). Convert the following three numbers, given in hexadecimal, to base 10:
+
+1. `0x3F000000`
+2. `0x7FC00000`
+3. `0x41200000`
+
+### 2. The `ls -R` command and symbolic links [3 points]
+
+The command `ls -lR` is run at the root of the file system and gives (extract):
+
+```text
+/tata:
+total 0
+
+/toto:
+-rw-r--r-- 1 user user 120 fic1.doc
+-rw-r--r-- 1 user user 340 fic2.doc
+-rw-r--r-- 1 user user 560 fic3.docx
+drwxr-xr-x 2 user user 4096 doc
+
+/toto/doc:
+lrwxrwxrwx 1 user user 8 lien1 -> ../fic1.doc
+lrwxrwxrwx 1 user user 8 lien2 -> ../fic2.doc
+```
+
+The following command is then run (`mv` moves files):
+
+```bash
+mv /toto/*doc /tata
+```
+
+1. [1 pt] What does the `tata` directory contain after the command has run?
+2. [1 pt] This command causes a problem. Which one?
+3. [1 pt] How can this problem be solved?
+
+### 3. Semaphores [4 points]
+
+An intersection of two roads is controlled by two traffic lights `F1` and `F2`. The two lights must **never** be green at the same time.
+
+1. [2 pts] Using semaphores and the `P` and `V` operations, write the program that controls lights `F1` and `F2` so that this constraint is respected. State the semaphores used and their initial values.
+2. [2 pts] Now consider two semaphores `B1` and `B2` that prevent collisions by letting **only one car at a time** into the intersection. Write the program of a car arriving from road 1, then the program of a car arriving from road 2, using `P` and `V` on `B1` and `B2`.
+
+### 4. Scheduling [7 points]
+
+A teacher has only **one hour** to spend with students. The following students are all present at time 0 and arrived in the order E1, ..., E6. It takes the teacher **1 minute** to switch from one student to the next.
+
+| Student | E1 | E2 | E3 | E4 | E5 | E6 |
+| --- | --- | --- | --- | --- | --- | --- |
+| Meeting length (min) | 25 | 10 | 45 | 5 | 15 | 20 |
+
+1. [4 pts] We want to know which scheduling policy lets the teacher see the most students **completely**. For each of the following policies, draw the Gantt chart and give the number of students seen completely:
+   - (a) first come, first served;
+   - (b) shortest first;
+   - (c) round robin (5-minute quantum).
+
+   Conclude: which policy is the most advantageous for the teacher?
+2. [2 pts]
+   - (a) Why would one choose a small quantum?
+   - (b) Why would one choose a large quantum?
+3. [1 pt] What happens if the quantum is larger than the longest execution time of the given processes (here 45 minutes)?
+
+### 5. Watch out, it's going to cut! [3 points]
+
+Given the file `fichier.txt`:
+
+```text
+alice:25:paris:france
+bob:31:lyon:france
+chloe:19:tunis:tunisie
+david:25:madrid:espagne
+eve::rome:italie
+```
+
+Give and explain the output of the following commands:
+
+1. `grep "france" fichier.txt | cut -d":" -f1,3 | sort -r`
+2. `grep ":25:" fichier.txt | cut -d":" -f4 | sort`
+3. `cut -d":" -f2 fichier.txt | sort -u`

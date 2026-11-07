@@ -560,3 +560,96 @@ Pas de commandes shell dans ce document : c'est un exercice sur un cache pour un
 **Pourquoi l'exercice fonctionne :** les adresses `BX` et `BX+2048` sont séparées de 2 Ko, exactement la taille du cache, donc dans un cache à correspondance directe elles tombent sur la **même ligne** et s'évincent mutuellement (défauts de conflit). Avec 2 voies, elles peuvent coexister dans le même ensemble.
 
 **Conclusion type :** un seul petit benchmark ne suffit pas pour juger un cache ; les résultats dépendent du motif d'accès, il faut donc comparer sur des programmes variés.
+
+## 12. EXAMEN 2017-2018 recréé
+
+Système d'Exploitation — examen du ... — 2h00
+
+**Éléments autorisés et interdits**
+
+- les polycopiés et vos propres notes de cours sont autorisés (pas de photocopie)
+- la copie de votre voisin n'est pas autorisée
+- calculatrice interdite
+
+**Remarque :** toute réponse à une question doit être justifiée (explication/calcul/observation)
+
+### 1. Représentation des nombres [3 points]
+
+On utilise la norme IEEE 754 simple précision (32 bits). Convertissez en base 10 les trois nombres suivants, donnés en hexadécimal :
+
+1. `0x3F000000`
+2. `0x7FC00000`
+3. `0x41200000`
+
+### 2. Commande `ls -R` et liens symboliques [3 points]
+
+On exécute la commande `ls -lR` à la racine du système de fichiers et on obtient (extrait) :
+
+```text
+/tata:
+total 0
+
+/toto:
+-rw-r--r-- 1 user user 120 fic1.doc
+-rw-r--r-- 1 user user 340 fic2.doc
+-rw-r--r-- 1 user user 560 fic3.docx
+drwxr-xr-x 2 user user 4096 doc
+
+/toto/doc:
+lrwxrwxrwx 1 user user 8 lien1 -> ../fic1.doc
+lrwxrwxrwx 1 user user 8 lien2 -> ../fic2.doc
+```
+
+On exécute ensuite la commande suivante (`mv` permet de déplacer des fichiers) :
+
+```bash
+mv /toto/*doc /tata
+```
+
+1. [1 pt] Que contient le répertoire `tata` après l'exécution de la commande ?
+2. [1 pt] Cette commande présente un problème. Lequel ?
+3. [1 pt] Comment peut-on résoudre ce problème ?
+
+### 3. Sémaphores [4 points]
+
+Soit une intersection de deux routes contrôlée par deux feux de circulation `F1` et `F2`. Les deux feux ne doivent **jamais** être verts en même temps.
+
+1. [2 pts] À l'aide de sémaphores et des opérations `P` et `V`, écrivez le programme qui gère les feux `F1` et `F2` de façon à respecter cette contrainte. Précisez les sémaphores utilisés et leur valeur initiale.
+2. [2 pts] On considère maintenant deux sémaphores `B1` et `B2` permettant d'éviter les collisions en ne laissant **qu'une seule voiture à la fois** dans l'intersection. Écrivez le programme d'une voiture arrivant par la route 1 puis celui d'une voiture arrivant par la route 2, en utilisant `P` et `V` sur `B1` et `B2`.
+
+### 4. Ordonnancement [7 points]
+
+Un professeur n'a qu'**une heure** à consacrer à ses élèves. Il reçoit les étudiants suivants, tous présents à l'instant 0 et arrivés dans l'ordre E1, ..., E6. Il met **1 minute** pour passer d'un étudiant à l'autre.
+
+| Étudiant | E1 | E2 | E3 | E4 | E5 | E6 |
+| --- | --- | --- | --- | --- | --- | --- |
+| Durée de l'entretien (min) | 25 | 10 | 45 | 5 | 15 | 20 |
+
+1. [4 pts] On veut savoir quelle politique d'ordonnancement permet au professeur de voir le plus d'élèves **complètement**. Pour chacune des politiques suivantes, dessinez le diagramme de Gantt et indiquez le nombre d'élèves vus complètement :
+   - (a) premier arrivé, premier servi ;
+   - (b) plus court d'abord ;
+   - (c) tourniquet (quantum de 5 minutes).
+
+   Concluez : quelle politique est la plus avantageuse pour le professeur ?
+2. [2 pts]
+   - (a) Pourquoi choisirait-on un petit quantum ?
+   - (b) Pourquoi choisirait-on un grand quantum ?
+3. [1 pt] Que se passe-t-il si l'on prend un quantum supérieur au plus grand temps d'exécution des processus proposés (ici 45 minutes) ?
+
+### 5. Attention ça va couper ! [3 points]
+
+Soit le fichier `fichier.txt` :
+
+```text
+alice:25:paris:france
+bob:31:lyon:france
+chloe:19:tunis:tunisie
+david:25:madrid:espagne
+eve::rome:italie
+```
+
+Donnez et expliquez le résultat des commandes suivantes :
+
+1. `grep "france" fichier.txt | cut -d":" -f1,3 | sort -r`
+2. `grep ":25:" fichier.txt | cut -d":" -f4 | sort`
+3. `cut -d":" -f2 fichier.txt | sort -u`
