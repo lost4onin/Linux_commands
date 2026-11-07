@@ -21,10 +21,6 @@ const alternate = hasLang(other) ? `${langBase(other)}/all/` : undefined;
   description={t.fullSheetDescription(sheet.title)}
   current="all"
   alternate={alternate}
-  tabs={[
-    { href: '#top', label: t.allTab },
-    ...sheet.sections.map((s) => ({ href: `#${s.slug}`, label: `${s.slug}.section` })),
-  ]}
   consoleLines={sheet.sections.map((s) => ({ k: 'cmd' as const, t: `cd ${s.slug}`, id: s.slug }))}
 >
   <article class="all-page">

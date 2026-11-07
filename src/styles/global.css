@@ -24,7 +24,6 @@
   --font-pixel: 'Silkscreen', var(--font-mono);
 
   --tabbar-h: 2.25rem;
-  --sidebar-w: 16.5rem;
   --console-w: 19rem;
   --content-w: 62rem;
   --dock-space: 6.5rem;
@@ -428,10 +427,9 @@ main:focus {
   height: 100%;
   overflow: hidden;
   padding: 0 0.9rem;
-  line-height: var(--tabbar-h);
   text-overflow: ellipsis;
   color: var(--muted);
-  font: 500 0.72rem/1 var(--font-mono);
+  font: 500 0.72rem / calc(var(--tabbar-h) - 1px) var(--font-mono);
   text-decoration: none;
   white-space: nowrap;
   transition: color 0.15s;
@@ -484,7 +482,7 @@ main:focus {
 }
 
 /* ==========================================================================
-   Shell: sidebar | main | console
+   Shell: main | console
    ========================================================================== */
 
 .shell {
@@ -498,144 +496,33 @@ main {
 }
 main > * {
   max-width: var(--content-w);
+  margin-inline: auto;
 }
-
-.sidebar {
-  padding: 1.25rem 0.75rem calc(var(--dock-space) - 1rem);
-  overscroll-behavior: contain;
-}
-.sidebar-title {
-  margin: 0 0 0.6rem 0.6rem;
-  color: var(--muted);
-  font: 500 0.72rem var(--font-mono);
-  letter-spacing: 0.04em;
-}
-.nav-list {
-  display: grid;
-  gap: 1px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-.nav-list a {
-  display: grid;
-  grid-template-columns: 1.75rem 1fr;
-  gap: 0.2rem;
-  padding: 0.45rem 0.6rem;
-  border-left: 2px solid transparent;
-  color: var(--text-2);
-  font-size: 0.86rem;
-  line-height: 1.38;
-  text-decoration: none;
-  transition:
-    background-color 0.15s,
-    color 0.15s;
-}
-.nav-list a:hover {
-  background: var(--surface-2);
-  color: var(--text);
-}
-.nav-list a[aria-current='page'] {
-  border-left-color: var(--accent);
-  background: var(--accent-soft);
-  color: var(--text);
-  font-weight: 600;
-}
-.nav-num {
-  padding-top: 0.08rem;
-  color: var(--muted);
-  font: 500 0.74rem/1.6 var(--font-mono);
-}
-.nav-list a[aria-current='page'] .nav-num {
-  color: var(--cmd);
-}
-.sidebar-foot {
-  margin-top: 1rem;
-  padding: 0.9rem 0.6rem 0;
-  border-top: 1px solid var(--border);
-  font: 500 0.8rem var(--font-mono);
-}
-.sidebar-foot a {
-  text-decoration: none;
-}
-.sidebar-foot a:hover,
-.sidebar-foot a[aria-current='page'] {
-  text-decoration: underline;
-}
-
-@media (min-width: 64rem) {
-  .shell {
-    display: grid;
-    grid-template-columns: var(--sidebar-w) minmax(0, 1fr);
-  }
-  .sidebar {
-    position: sticky;
-    top: var(--tabbar-h);
-    height: calc(100vh - var(--tabbar-h));
-    height: calc(100dvh - var(--tabbar-h));
-    overflow-y: auto;
-    border-right: 1px solid var(--border);
-  }
-  .nav-toggle,
-  .nav-backdrop {
-    display: none !important;
-  }
-}
-
-@media (max-width: 63.99rem) {
-  .sidebar {
-    position: fixed;
-    z-index: 45;
-    top: var(--tabbar-h);
-    bottom: 0;
-    left: 0;
-    width: min(20rem, 86vw);
-    overflow-y: auto;
-    background: var(--bg);
-    border-right: 1px solid var(--border);
-    box-shadow: var(--shadow);
-    transform: translateX(-100%);
-    visibility: hidden;
-    transition:
-      transform 0.22s ease,
-      visibility 0s linear 0.22s;
-  }
-  :root[data-nav='open'] .sidebar {
-    transform: none;
-    visibility: visible;
-    transition: transform 0.22s ease;
-  }
-  .nav-backdrop {
-    position: fixed;
-    z-index: 42;
-    inset: var(--tabbar-h) 0 0 0;
-    background: rgb(4 10 11 / 0.55);
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 0.2s;
-  }
-  :root[data-nav='open'] .nav-backdrop {
-    opacity: 1;
-    pointer-events: auto;
-  }
-  :root[data-nav='open'] body {
-    overflow: hidden;
-  }
+@media (max-width: 47.99rem) {
   main {
     padding-top: 1.5rem;
   }
-  /* No JavaScript: show the list inline instead of a drawer. */
-  :root:not(.js) .nav-toggle {
+}
+
+/* Arrows to scroll the tab strip when it is wider than the screen */
+.tabs-arrow {
+  flex: none;
+  width: 2rem;
+  padding: 0;
+  border: 0;
+  background: var(--bg-tabbar);
+  color: var(--accent);
+  font: 700 1rem/1 var(--font-mono);
+  cursor: pointer;
+  box-shadow: 0 0 14px 6px var(--bg-tabbar);
+  z-index: 1;
+}
+.tabs-arrow:hover {
+  color: var(--text);
+}
+@media (hover: none) {
+  .tabs-arrow {
     display: none;
-  }
-  :root:not(.js) .sidebar {
-    position: static;
-    width: auto;
-    transform: none;
-    visibility: visible;
-    box-shadow: none;
-    border-right: 0;
-    border-bottom: 1px solid var(--border);
   }
 }
 
@@ -646,10 +533,11 @@ main > * {
 }
 @media (min-width: 88rem) {
   .shell.has-console {
-    grid-template-columns: var(--sidebar-w) minmax(0, 1fr) var(--console-w);
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) var(--console-w);
   }
   :root[data-console='closed'] .shell.has-console {
-    grid-template-columns: var(--sidebar-w) minmax(0, 1fr);
+    display: block;
   }
   .console-toggle {
     display: flex;
@@ -2042,8 +1930,6 @@ pre.shiki:focus-visible {
   }
 
   .tabbar,
-  .sidebar,
-  .nav-backdrop,
   .console,
   .dock,
   .skip-link,

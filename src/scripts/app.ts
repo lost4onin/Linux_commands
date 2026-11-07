@@ -48,33 +48,6 @@ systemDark.addEventListener('change', (event) => {
   if (!savedTheme()) applyTheme(event.matches ? 'dark' : 'light');
 });
 
-/* ---------------- Mobile navigation drawer ---------------- */
-
-const navToggle = document.querySelector<HTMLButtonElement>('[data-nav-toggle]');
-const sidebar = document.getElementById('sidebar');
-const desktop = window.matchMedia('(min-width: 64rem)');
-
-function setNav(open: boolean, returnFocus = false) {
-  if (open) root.dataset.nav = 'open';
-  else delete root.dataset.nav;
-  navToggle?.setAttribute('aria-expanded', String(open));
-  if (open) {
-    (sidebar?.querySelector<HTMLAnchorElement>('[aria-current="page"]') ?? sidebar?.querySelector('a'))?.focus();
-  } else if (returnFocus) {
-    navToggle?.focus();
-  }
-}
-
-navToggle?.addEventListener('click', () => setNav(root.dataset.nav !== 'open'));
-document.querySelector('[data-nav-close]')?.addEventListener('click', () => setNav(false));
-sidebar?.addEventListener('click', (event) => {
-  if ((event.target as Element).closest('a')) setNav(false);
-});
-document.addEventListener('keydown', (event) => {
-  if (event.key === 'Escape' && root.dataset.nav === 'open') setNav(false, true);
-});
-desktop.addEventListener('change', () => setNav(false));
-
 /* ---------------- Copy buttons ---------------- */
 
 async function copyText(text: string): Promise<boolean> {
@@ -264,11 +237,55 @@ if (params.get('print') === '1' && document.querySelector('.all-page')) {
 const missing = document.querySelector('[data-missing-path]');
 if (missing) missing.textContent = location.pathname;
 
-/* ---------------- Tab strip + console: follow the scroll position ---------------- */
+/* ---------------- Tab strip (section navigation) ---------------- */
 
 const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
 const tabbar = document.querySelector<HTMLElement>('.tabbar');
-const tabLinks = [...document.querySelectorAll<HTMLAnchorElement>('.tabs a[data-tab]')];
+const strip = document.querySelector<HTMLElement>('.tabs');
+const arrows = [...document.querySelectorAll<HTMLButtonElement>('[data-tabs-scroll]')];
+
+function updateArrows() {
+  if (!strip) return;
+  const max = strip.scrollWidth - strip.clientWidth;
+  const [left, right] = arrows;
+  if (left) left.hidden = strip.scrollLeft <= 2;
+  if (right) right.hidden = strip.scrollLeft >= max - 2;
+}
+
+if (strip) {
+  // Put the current page's tab in the middle of the strip (after first paint: no forced reflow).
+  requestAnimationFrame(() =>
+    requestAnimationFrame(() => {
+      const active = strip.querySelector<HTMLElement>('a[aria-current]');
+      if (active) strip.scrollLeft = active.offsetLeft - (strip.clientWidth - active.offsetWidth) / 2;
+      updateArrows();
+    }),
+  );
+  strip.addEventListener('scroll', updateArrows, { passive: true });
+  window.addEventListener('resize', updateArrows, { passive: true });
+  for (const arrow of arrows) {
+    arrow.addEventListener('click', () => {
+      const dir = Number(arrow.dataset.tabsScroll);
+      strip.scrollBy({ left: dir * strip.clientWidth * 0.7, behavior: reduceMotion.matches ? 'auto' : 'smooth' });
+    });
+  }
+  // A vertical mouse wheel over the strip scrolls it sideways (until it reaches an end).
+  strip.addEventListener(
+    'wheel',
+    (event) => {
+      if (Math.abs(event.deltaY) <= Math.abs(event.deltaX)) return;
+      const max = strip.scrollWidth - strip.clientWidth;
+      const atEnd = event.deltaY > 0 ? strip.scrollLeft >= max - 1 : strip.scrollLeft <= 0;
+      if (max <= 0 || atEnd) return;
+      event.preventDefault();
+      strip.scrollLeft += event.deltaY;
+    },
+    { passive: false },
+  );
+}
+
+/* ---------------- Reading progress + console: follow the scroll position ---------------- */
+
 const consoleList = document.querySelector<HTMLElement>('.console-lines');
 const consoleLinks = [...document.querySelectorAll<HTMLAnchorElement>('[data-console-target]')];
 
@@ -277,9 +294,6 @@ interface Spy {
   target: HTMLElement;
 }
 const byId = (id: string) => document.getElementById(decodeURIComponent(id));
-const tabSpies: Spy[] = tabLinks
-  .map((link) => ({ link, target: byId(link.hash.slice(1))! }))
-  .filter((s) => s.target);
 const consoleSpies: Spy[] = consoleLinks
   .map((link) => ({ link: link.parentElement!, target: byId(link.dataset.consoleTarget!)! }))
   .filter((s) => s.target);
@@ -295,7 +309,6 @@ function current(spies: Spy[], line: number): Spy | undefined {
   return found ?? spies[0];
 }
 
-let activeTab: Spy | undefined;
 let activeLine: Spy | undefined;
 let ticking = false;
 
@@ -306,17 +319,6 @@ function onScroll() {
   const max = document.documentElement.scrollHeight - window.innerHeight;
   const progress = max > 0 ? Math.min(1, window.scrollY / max) : 0;
   const line = (tabbar?.offsetHeight ?? 36) + window.innerHeight * 0.25;
-  const tab = current(tabSpies, line);
-  const strip = tab?.link.closest<HTMLElement>('.tabs');
-  const tabScroll =
-    tab && strip && tab !== activeTab
-      ? (() => {
-          const { offsetLeft, offsetWidth } = tab.link;
-          const outside =
-            offsetLeft < strip.scrollLeft || offsetLeft + offsetWidth > strip.scrollLeft + strip.clientWidth;
-          return outside ? offsetLeft - 24 : undefined;
-        })()
-      : undefined;
   const consoleShown = Boolean(consoleList && consoleList.offsetParent !== null);
   const cl = consoleShown ? current(consoleSpies, line) : undefined;
   const consoleTop =
@@ -324,13 +326,6 @@ function onScroll() {
 
   // 2. Write.
   tabbar?.style.setProperty('--progress', String(progress));
-  if (tab !== activeTab) {
-    activeTab?.link.removeAttribute('aria-current');
-    tab?.link.setAttribute('aria-current', 'location');
-    activeTab = tab;
-    // Keep the active tab visible in the (horizontally scrolling) strip.
-    if (strip && tabScroll !== undefined) strip.scrollTo({ left: tabScroll });
-  }
   if (consoleShown && cl !== activeLine) {
     activeLine?.link.classList.remove('is-active');
     cl?.link.classList.add('is-active');

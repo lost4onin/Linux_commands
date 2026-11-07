@@ -31,10 +31,6 @@ const shortSummary =
     : section.summary;
 const description = `${section.heading}. ${shortSummary} — ${sheet.title}.`;
 
-const tabs = [
-  { href: '#top', label: `${section.slug}.page` },
-  ...section.subheadings.map((h) => ({ href: `#${h.id}`, label: `${h.id}.section` })),
-];
 ---
 
 <Base
@@ -43,7 +39,6 @@ const tabs = [
   description={description}
   current={section.slug}
   alternate={alternate}
-  tabs={tabs}
   consoleLines={section.console}
   prev={prev && { url: prev.url, title: prev.heading }}
   next={next && { url: next.url, title: next.heading }}

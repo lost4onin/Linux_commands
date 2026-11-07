@@ -3,10 +3,6 @@ import '../styles/global.css';
 import { getCheatsheet, type ConsoleLine } from '../lib/cheatsheet';
 import { ui, langBase, otherLang, type Lang } from '../i18n';
 
-export interface Tab {
-  href: string;
-  label: string;
-}
 export interface ScriptLine {
   /** in = typed command, out = its output */
   k: 'in' | 'out';
@@ -18,12 +14,10 @@ interface Props {
   /** Full <title>. */
   title: string;
   description: string;
-  /** Slug of the current section, to highlight it in the sidebar ('all' for the full sheet). */
+  /** Current page, highlighted in the tab strip: 'home', 'all' or a section slug. */
   current?: string;
   /** The same page in the other language, if it exists. */
   alternate?: string;
-  /** Tabs in the top strip: anchors of this page, highlighted while scrolling. */
-  tabs?: Tab[];
   /** Console panel: lines that link to rows of this page… */
   consoleLines?: ConsoleLine[];
   /** …or a short shell session typed out on load. */
@@ -38,7 +32,6 @@ const {
   description,
   current,
   alternate,
-  tabs = [],
   consoleLines,
   consoleScript,
   prev,
@@ -48,8 +41,19 @@ const t = ui[lang];
 const other = otherLang(lang);
 const base = langBase(lang);
 const sheet = await getCheatsheet(lang);
-const pad = (n: string) => (n ? n.padStart(2, '0') : '··');
 const hasConsole = Boolean(consoleLines?.length || consoleScript?.length);
+
+// The top strip is the site navigation: home, every section, then the full sheet.
+const tabs = [
+  { href: `${base}/`, label: t.homeTab, title: sheet.title, active: current === 'home' },
+  ...sheet.sections.map((s) => ({
+    href: s.url,
+    label: `${s.slug}.section`,
+    title: s.heading,
+    active: current === s.slug,
+  })),
+  { href: `${base}/all/`, label: t.allTab, title: t.fullSheet, active: current === 'all' },
+];
 
 const abs = (p: string) => (Astro.site ? new URL(p, Astro.site).href : undefined);
 const canonical = abs(Astro.url.pathname);
@@ -118,12 +122,13 @@ const clientStrings = JSON.stringify({
     <a class="skip-link" href="#main">{t.skip}</a>
 
     <div class="tabbar">
-      <nav class="tabs-nav" aria-label={t.tabsLabel}>
+      <button class="tabs-arrow" type="button" tabindex="-1" aria-hidden="true" data-tabs-scroll="-1" hidden>‹</button>
+      <nav class="tabs-nav" aria-label={t.sections}>
         <ol class="tabs">
           {
             tabs.map((tab) => (
               <li>
-                <a href={tab.href} data-tab>
+                <a href={tab.href} title={tab.title} aria-current={tab.active ? 'page' : undefined}>
                   {tab.label}
                 </a>
               </li>
@@ -131,6 +136,7 @@ const clientStrings = JSON.stringify({
           }
         </ol>
       </nav>
+      <button class="tabs-arrow" type="button" tabindex="-1" aria-hidden="true" data-tabs-scroll="1" hidden>›</button>
       {
         hasConsole && (
           <button
@@ -150,26 +156,6 @@ const clientStrings = JSON.stringify({
     </div>
 
     <div class:list={['shell', { 'has-console': hasConsole }]}>
-      <div class="nav-backdrop" data-nav-close></div>
-      <nav id="sidebar" class="sidebar" aria-label={t.sections}>
-        <p class="sidebar-title" aria-hidden="true">~/{t.sections.toLowerCase()}</p>
-        <ol class="nav-list">
-          {
-            sheet.sections.map((s) => (
-              <li>
-                <a href={s.url} aria-current={current === s.slug ? 'page' : undefined}>
-                  <span class="nav-num" aria-hidden="true">{pad(s.number)}</span>
-                  <span class="nav-label">{s.title}</span>
-                </a>
-              </li>
-            ))
-          }
-        </ol>
-        <div class="sidebar-foot">
-          <a href={`${base}/all/`} aria-current={current === 'all' ? 'page' : undefined}>{t.fullSheet}</a>
-        </div>
-      </nav>
-
       <main id="main" tabindex="-1">
         <slot />
         <footer class="site-footer">
@@ -215,10 +201,6 @@ const clientStrings = JSON.stringify({
     </div>
 
     <nav class="dock" aria-label={t.dockLabel}>
-      <button class="dock-btn nav-toggle" type="button" aria-controls="sidebar" aria-expanded="false" data-nav-toggle>
-        <svg aria-hidden="true" viewBox="0 0 24 24" width="20" height="20"><path d="M4 7h16M4 12h16M4 17h16" /></svg>
-        <span class="sr-only">{t.menu}</span>
-      </button>
       <a class="dock-brand" href={`${base}/`}>
         <span class="brand-mark" aria-hidden="true">&gt;_</span>
         <span class="dock-brand-text">{t.brand}</span>
