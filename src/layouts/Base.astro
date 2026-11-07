@@ -2,6 +2,7 @@
 import '../styles/global.css';
 import { getCheatsheet, type ConsoleLine } from '../lib/cheatsheet';
 import { ui, langBase, otherLang, type Lang } from '../i18n';
+import { author } from '../site.config';
 
 export interface ScriptLine {
   /** in = typed command, out = its output */
@@ -171,6 +172,9 @@ const clientStrings = JSON.stringify({
       <main id="main" tabindex="-1">
         <slot />
         <footer class="site-footer">
+          <p class="credit">
+            {t.madeBy} <strong>{author.name}</strong> <span class="credit-group">{author.group}</span>
+          </p>
           <p>
             {t.footerGenerated} <code>{t.sourceFile}</code>{' · '}{t.footerPress} <kbd>/</kbd> {t.footerOr} <kbd>Ctrl</kbd>&nbsp;<kbd>K</kbd> {t.footerToSearch}{' · '}<a href={`${base}/all/`}>{t.footerFullSheet}</a>
           </p>

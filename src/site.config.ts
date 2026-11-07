@@ -32,6 +32,9 @@ export const topics: { id: string; label: { en: string; fr: string }; slugs: str
   { id: 'exam', label: { en: 'Exam', fr: 'Examen' }, slugs: ['exam-2017-2018-recreated'] },
 ];
 
+/** Credit shown in the footer of every page. */
+export const author = { name: 'Akrem Medimagh', group: 'ITI3' };
+
 export const otherTopicLabel = { en: 'Other', fr: 'Autres' };
 
 /** Slugs that would collide with other pages. */

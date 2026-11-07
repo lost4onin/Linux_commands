@@ -68,6 +68,7 @@ const en = {
   statCommands: 'commands',
   statEntries: 'entries',
   echoHint: 'Press / to search',
+  madeBy: 'Made by',
   /** Used while rendering the Markdown. */
   render: {
     copy: 'Copy',
@@ -152,6 +153,7 @@ const fr: UiStrings = {
   statCommands: 'commandes',
   statEntries: 'entrées',
   echoHint: 'Appuyez sur / pour rechercher',
+  madeBy: 'Réalisé par',
   render: {
     copy: 'Copier',
     copyCodeSr: ' le code',

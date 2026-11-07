@@ -1842,6 +1842,26 @@ pre.shiki:focus-visible {
 .site-footer p {
   margin: 0;
 }
+.site-footer .credit {
+  margin-bottom: 0.35rem;
+  color: var(--text-2);
+  font-size: 0.8rem;
+}
+.credit strong {
+  color: var(--accent);
+  font-weight: 700;
+}
+.credit-group {
+  display: inline-block;
+  margin-left: 0.3rem;
+  padding: 0 0.4rem;
+  border: 1px solid var(--accent-line);
+  border-radius: 3px;
+  color: var(--accent);
+  font: 400 0.7rem/1.6 var(--font-pixel);
+  letter-spacing: 0.06em;
+}
+
 /* Pixel trail around the cursor (home page) */
 .pixel-trail {
   position: fixed;
