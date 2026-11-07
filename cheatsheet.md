@@ -1,6 +1,6 @@
 # Linux / Unix Commands Cheat Sheet (Operating Systems exam)
 
-Nov 7, 2026 · @ghada
+Nov 7, 2026 · @akrem
 
 Every command from your 5 course documents (TP1 Unix basics, Shell interpreter, TP4 Files, TP5 Processes, Cache memory), grouped by what it does, with full name and a one-line explanation.
 

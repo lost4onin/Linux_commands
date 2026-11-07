@@ -1,6 +1,6 @@
 # Aide-mémoire des commandes Linux / Unix (examen de Systèmes d'exploitation)
 
-7 nov. 2026 · @ghada
+7 nov. 2026 · @akrem
 
 Toutes les commandes de vos 5 documents de cours (TP1 Bases d'Unix, Interpréteur de commandes, TP4 Fichiers, TP5 Processus, Mémoire cache), regroupées par fonction, avec leur nom complet et une explication d'une ligne.
 
