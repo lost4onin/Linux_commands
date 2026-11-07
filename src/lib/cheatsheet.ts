@@ -457,7 +457,9 @@ function rehypeCheatsheet(opts: RenderOptions) {
           .map((l) => l.replace(/^\s*(#|\/\/|\/\*)\s?/, '').replace(/\*\/\s*$/, ''));
         const codeLines = lines.filter((l) => !/^\s*(#(?!!)|\/\/|\/\*)/.test(l));
         if (codeLines.length === 0) continue;
-        opts.consoleLines.push({ k: 'cmd', t: clean(codeLines[0] ?? ''), id });
+        // Shell/C code gets a "$" prompt in the console; plain output/data does not.
+        const isOutput = ['text', 'txt', 'plaintext', 'output'].includes(lang);
+        opts.consoleLines.push({ k: isOutput ? 'item' : 'cmd', t: clean(codeLines[0] ?? ''), id });
         collect({
           k: 'code',
           c: clean(codeLines[0] ?? '') + (codeLines.length > 1 ? ' …' : ''),
