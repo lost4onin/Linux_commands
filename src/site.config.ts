@@ -35,6 +35,17 @@ export const topics: { id: string; label: { en: string; fr: string }; slugs: str
 /** Credit shown in the footer of every page. */
 export const author = { name: 'Akrem Medimagh', group: 'ITI3' };
 
+/**
+ * Files offered for download on a section page, keyed by the section's slug.
+ * `file` is a path inside /public.
+ */
+export const downloads: Record<string, { file: string; label: { en: string; fr: string } }> = {
+  'exam-2017-2018-recreated': {
+    file: '/downloads/examen-SE-2017-2018.pdf',
+    label: { en: 'Download the exam', fr: "Télécharger l'examen" },
+  },
+};
+
 export const otherTopicLabel = { en: 'Other', fr: 'Autres' };
 
 /** Slugs that would collide with other pages. */

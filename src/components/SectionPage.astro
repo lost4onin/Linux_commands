@@ -1,7 +1,10 @@
 ---
+import fs from 'node:fs';
+import path from 'node:path';
 import Base from '../layouts/Base.astro';
 import { getCheatsheet, hasLang, type Section, type Cheatsheet } from '../lib/cheatsheet';
 import { ui, langBase, otherLang, type Lang } from '../i18n';
+import { downloads } from '../site.config';
 
 interface Props {
   lang: Lang;
@@ -31,6 +34,16 @@ const shortSummary =
     : section.summary;
 const description = `${section.heading}. ${shortSummary} — ${sheet.title}.`;
 
+// Optional download (e.g. the original exam PDF), with its size read at build time.
+const dl = downloads[section.slug];
+let download: { href: string; name: string; label: string; size: string } | undefined;
+if (dl) {
+  const onDisk = path.join(process.cwd(), 'public', dl.file);
+  if (fs.existsSync(onDisk)) {
+    const kb = Math.round(fs.statSync(onDisk).size / 1024);
+    download = { href: dl.file, name: path.basename(dl.file), label: dl.label[lang], size: `PDF · ${kb} KB` };
+  }
+}
 ---
 
 <Base
@@ -56,6 +69,21 @@ const description = `${section.heading}. ${shortSummary} — ${sheet.title}.`;
       <p class="page-meta">
         {t.entries(section.entryCount)} · <a href={`${base}/all/#${section.slug}`}>{t.seeInFullSheet}</a>
       </p>
+      {
+        download && (
+          <p class="banner-actions">
+            <a class="btn-cta" href={download.href} download={download.name} type="application/pdf">
+              <span class="btn-cta-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="18" height="18"><path d="M12 3v12M7 10l5 5 5-5M5 21h14" /></svg>
+              </span>
+              <span class="btn-cta-label">
+                {download.label}
+                <span class="btn-cta-meta">{download.size}</span>
+              </span>
+            </a>
+          </p>
+        )
+      }
     </header>
 
     <div class="prose" set:html={section.html} />

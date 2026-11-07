@@ -1286,6 +1286,16 @@ h1 {
   color: var(--muted);
   font: 0.8rem var(--font-mono);
 }
+.banner-actions {
+  margin: 1.25rem 0 0;
+}
+.btn-cta-meta {
+  margin-left: 0.75rem;
+  padding-left: 0.75rem;
+  border-left: 1px solid var(--accent-line);
+  color: var(--muted);
+  font-size: 0.72rem;
+}
 
 .prevnext {
   display: grid;
@@ -1980,6 +1990,7 @@ pre.shiki:focus-visible {
   .filter-status,
   .prompt-line,
   .banner-pixel,
+  .banner-actions,
   .copy-inline,
   .copy-block,
   .code-head::before,
