@@ -187,10 +187,10 @@ dialog.addEventListener('click', (event) => {
 dialog.querySelector('[data-search-close]')?.addEventListener('click', () => dialog.close());
 
 export function openSearch(initial?: string) {
+  // app.ts has usually opened the dialog already; keep whatever was typed meanwhile.
   if (!dialog.open) dialog.showModal();
   if (initial !== undefined) input.value = initial;
-  input.focus();
-  input.select();
+  if (document.activeElement !== input) input.focus();
   render();
   ready.then(render);
 }

@@ -126,6 +126,14 @@ let searchModule: Promise<typeof import('./search')> | undefined;
 const loadSearch = () => (searchModule ??= import('./search'));
 
 async function openSearch(initial?: string) {
+  // Open and focus right away so keys typed while the search code loads are kept.
+  const dialog = document.getElementById('search-dialog') as HTMLDialogElement | null;
+  const input = document.getElementById('search-input') as HTMLInputElement | null;
+  if (dialog && !dialog.open) {
+    dialog.showModal();
+    input?.focus();
+    input?.select(); // reopening: typing replaces the previous query
+  }
   const { openSearch: open } = await loadSearch();
   open(initial);
 }
