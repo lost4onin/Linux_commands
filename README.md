@@ -7,7 +7,7 @@ the Unix/Linux cheat sheet for the Operating Systems exam.
   (French pages live under `/fr/`, from [`cheatsheet.fr.md`](cheatsheet.fr.md))
 - One page per `##` section (`/files/`, `/processes/`, …) plus a home page with cards
 - Section 12, **EXAM 2017-2018 recreated**: the Operating Systems exam paper retyped
-  (questions only), in French and English
+  (questions only), in French and English, with a button to download the original PDF
 - A tab strip at the top to move between sections, plus previous/next links
 - Instant search over every command (press `/` or `Ctrl K`)
 - Copy buttons on commands and code blocks
@@ -15,7 +15,7 @@ the Unix/Linux cheat sheet for the Operating Systems exam.
 - Phone-friendly tables: horizontal scroll, sticky first column
 - Print stylesheet and a one-page "full sheet" for printing or saving as PDF
 - Console-style interface: a `console.log` panel listing the commands of the page you
-  are reading (wide screens), a floating dock with home, previous/next, language, theme
+  are reading (screens 1024 px and wider), a floating dock with home, previous/next, language, theme
   and search, and a pixel trail around the mouse on the home page
 - Refreshing a page takes you back to the home page
 - No server code, no database, no external fonts or trackers
@@ -112,9 +112,10 @@ paper in light mode, monospace labels, thin headlines and a pixel font for big n
   `files.section`, …, `all.page`); the current one is highlighted and scrolled into
   view. Use the ‹ › arrows or the mouse wheel when it is wider than the screen. A thin
   line under it shows how far you have read.
-- **`console.log` panel** (screens 1408 px and wider): lists the commands of the
-  section, typed out on load. The line for the row you are reading is highlighted;
-  click a line to jump to it. Close it with the × in the tab strip (remembered).
+- **`console.log` panel** (screens 1024 px and wider, open on every page): lists the
+  commands of the section, typed out on load. The line for the row you are reading is
+  highlighted; click a line to jump to it. The × in the tab strip hides it for the
+  current page only.
 - **Dock** (bottom): home, previous/next section, full sheet, language, theme, search.
 - **Home**: pixels light up and fade around the mouse, the grid follows it, and red tags
   mark the sheet's dangerous commands (`rm -rf dir`, `kill -9 PID`, `sort f > f`,
@@ -124,6 +125,10 @@ paper in light mode, monospace labels, thin headlines and a pixel font for big n
   reloads the page.
 - **Footer**: "Made by Akrem Medimagh · ITI3". Change it in `author` in
   [`src/site.config.ts`](src/site.config.ts).
+- **Downloads**: the exam page has a "Download the exam" button for
+  `public/downloads/examen-SE-2017-2018.pdf`. To offer a file on another section, put it
+  in `public/downloads/` and add an entry to `downloads` in
+  [`src/site.config.ts`](src/site.config.ts), keyed by the section's URL slug.
 - Animations are switched off when the system asks for reduced motion.
 
 Colours are CSS variables at the top of `src/styles/global.css`. The pixel font is
