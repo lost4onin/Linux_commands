@@ -3,6 +3,7 @@ import '../styles/global.css';
 import { getCheatsheet, type ConsoleLine } from '../lib/cheatsheet';
 import { ui, langBase, otherLang, type Lang } from '../i18n';
 import { author } from '../site.config';
+import Analytics from '@vercel/analytics/astro';
 
 export interface ScriptLine {
   /** in = typed command, out = its output */
@@ -130,6 +131,7 @@ const clientStrings = JSON.stringify({
         d.classList.add('js');
       })();
     </script>
+    <Analytics />
   </head>
   <body>
     <a class="skip-link" href="#main">{t.skip}</a>
